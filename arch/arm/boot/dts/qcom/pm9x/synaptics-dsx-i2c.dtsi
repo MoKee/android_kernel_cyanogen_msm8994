@@ -1,0 +1,47 @@
+/* Copyright (C) 2014 Synaptics Incorporated
+ *
+ * Copyright (C) 2014 Alexandra Chin <alexandra.chin@tw.synaptics.com>
+ * Copyright (C) 2014 Scott Lin <scott.lin@tw.synaptics.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+&soc {
+	i2c@f9924000 {
+		status = "ok";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		synaptics_dsx@20 {
+			compatible = "synaptics,dsx-i2c";
+			reg = <0x20>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <76 0x2>;
+			vdd_ana-supply = <&pm8994_l22>;
+			vcc_i2c-supply = <&pm8994_l14>;
+			synaptics,pwr-reg-name = "vdd_ana";
+			synaptics,bus-reg-name = "vcc_i2c";
+			synaptics,reset-gpio = <&msm_gpio 96 0x00>;
+			synaptics,reset-on-state = <0>; /* active LOW */
+			synaptics,reset-active-ms = <50>;
+			synaptics,irq-gpio = <&msm_gpio 76 0x2008>;
+			synaptics,irq-on-state = <0>; /* active LOW */
+			synaptics,irq-flags = <0x2008>; /* IRQF_ONESHOT | IRQF_TRIGGER_LOW */
+			synaptics,power-delay-ms = <200>;
+			synaptics,reset-delay-ms = <200>;
+			/* TODO */
+			synaptics,max-y-for-2d = <1630>; /* remove if no virtual buttons */
+			synaptics,vir-button-codes = <158 225 2640 50 50   102 750 2640 50 50   139 1300 2640 50 50>;
+			/* TODO */
+			synaptics,panel-x = <1440>; /* set if need scale x-axis resolution */
+			synaptics,panel-y = <2560>; /* set if need scale y-axis resolution */
+		};
+	};
+};
