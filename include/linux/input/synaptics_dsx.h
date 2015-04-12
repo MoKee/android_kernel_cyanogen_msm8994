@@ -18,6 +18,10 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_PM9X
+#include "synaptics_dsx_pm9x.h"
+#else
+
 #ifndef _SYNAPTICS_DSX_H_
 #define _SYNAPTICS_DSX_H_
 
@@ -82,5 +86,7 @@ struct synaptics_rmi4_platform_data {
 	int (*gpio_config)(unsigned gpio, bool configure);
 	struct synaptics_rmi4_capacitance_button_map *capacitance_button_map;
 };
+
+#endif
 
 #endif
