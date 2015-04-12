@@ -1,0 +1,24 @@
+# Compal configuration options
+
+config MACH_COMPAL
+	bool "Compal device"
+	depends on ARCH_MSM
+	help
+	  Support for Compal products
+
+config MACH_COMPAL_MSM8994
+	bool "Compal MSM8994"
+	depends on ARCH_MSM8994
+	select MACH_COMPAL
+	help
+	  Support for MSM8994 Compal variants
+
+menu "Compal board selection"
+
+config MACH_PM9X
+	bool "PM9X board"
+	select MACH_COMPAL_MSM8994
+	help
+	  Support for Compal PM9X variant
+
+endmenu
