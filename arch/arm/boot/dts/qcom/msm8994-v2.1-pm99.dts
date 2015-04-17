@@ -21,3 +21,7 @@
 	compatible = "qcom,msm8994-mtp", "qcom,msm8994", "qcom,mtp";
 	qcom,board-id = <8 0>;
 };
+
+&pmi8994_charger {
+	qcom,charge-unknown-battery;
+};
