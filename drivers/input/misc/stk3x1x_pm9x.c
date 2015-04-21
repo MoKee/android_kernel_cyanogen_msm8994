@@ -192,7 +192,7 @@
 #define STK3210_STK3310_PID	0x13
 #define STK3211_STK3311_PID	0x1D
 
-//#define LightSensorK
+#define LightSensorK
 
 #ifdef STK_TUNE0
 	#define STK_MAX_MIN_DIFF	500
@@ -228,6 +228,7 @@
 #define ALS_NAME "lightsensor-level"
 #define PS_NAME "proximity"
 
+#define PS_H_L_DIFF 195
 #ifdef SPREADTRUM_PLATFORM
 extern int sprd_3rdparty_gpio_pls_irq;
 
@@ -393,6 +394,8 @@ unsigned int cci_als_value;
 unsigned int cci_als_value_cali=0; //lux value for ALS calibration
 unsigned int cci_transmittance_cali=0; // transmittance for ALS calibration
 //CCI Colby add end 20130111
+unsigned int cci_als_test_adc=0;
+unsigned int cci_als_value_cali_adc=0; 
 
 static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable);
 static int32_t stk3x1x_enable_als(struct stk3x1x_data *ps_data, uint8_t enable);
@@ -407,6 +410,10 @@ static int32_t stk3x1x_get_ir_reading(struct stk3x1x_data *ps_data);
 static int stk_ps_tune_zero_func_fae(struct stk3x1x_data *ps_data);
 #endif
 
+/* SYSFS symbolic link */	
+static struct kobject *ps_sysfs_link;
+static struct kobject *als_sysfs_link;
+			
 static int stk3x1x_i2c_read_data(struct i2c_client *client, unsigned char command, int length, unsigned char *values)
 {
 	uint8_t retry;	
@@ -682,13 +689,13 @@ static int32_t stk3x1x_check_pid(struct stk3x1x_data *ps_data)
 		case STK3010_PID:
 		case STK3210_STK3310_PID:
 		case STK3211_STK3311_PID:
-			return 0;
+			return err1;
 		case 0x0:
 			printk(KERN_ERR "PID=0x0, please make sure the chip is stk3x1x!\n");
-			return -2;			
+			return 0;			
 		default:
 			printk(KERN_ERR "%s: invalid PID(%#x)\n", __func__, err1);	
-			return -1;
+			return 0;
 	}
 		
 	return 0;	
@@ -1655,10 +1662,13 @@ static ssize_t stk_ps_show_nvdata(struct device *dev, struct device_attribute *a
 	printk(KERN_INFO "[#23][STK]cci_result_ct = %d\n", cci_result_ct);
 	printk(KERN_INFO "[#23][STK]cci_ps_cover =  %d\n", cci_ps_cover);
 	printk(KERN_INFO "[#23][STK]cci_als_value =  %d lux\n", cci_als_value);
+	printk(KERN_INFO "[#23][STK]cci_als_test_adc = %d \n",cci_als_test_adc);
 	printk(KERN_INFO "[#23][STK]cci_als_value_cali =  %d lux\n", cci_als_value_cali);
 	printk(KERN_INFO "[#23][STK]cci_transmittance_cali =  %d\n", cci_transmittance_cali);
+
+	printk(KERN_INFO "[#23][STK]cci_als_value_cali_adc = %d\n", cci_als_value_cali_adc);
 	//scnprintf(buf, PAGE_SIZE, "%d\n", kd);
-	return scnprintf(buf, PAGE_SIZE, "cci_ps_high_thd = %d, cci_ps_low_thd = %d, cci_result_ct = %d, cci_ps_cover = %d, cci_als_value = %d lux, cci_als_value_cali = %d lux, cci_transmittance_cali = %d\n", cci_ps_high_thd, cci_ps_low_thd, cci_result_ct, cci_ps_cover, cci_als_value, cci_als_value_cali, cci_transmittance_cali);
+	return scnprintf(buf, PAGE_SIZE, "cci_ps_high_thd = %d, cci_ps_low_thd = %d, cci_result_ct = %d, cci_ps_cover = %d, cci_als_value = %d lux, cci_als_test_adc= %d , cci_als_value_cali = %d lux, cci_transmittance_cali = %d ,cci_als_value_cali_adc = %d \n", cci_ps_high_thd, cci_ps_low_thd, cci_result_ct, cci_ps_cover, cci_als_value,cci_als_test_adc, cci_als_value_cali, cci_transmittance_cali,cci_als_value_cali_adc );
 }
 //CCI Colby add end 20130111
 #endif
@@ -1928,6 +1938,7 @@ static ssize_t stk_ps_cali_store(struct device *dev, struct device_attribute *at
 	 // add first H/L thd when cci_result_ct get start
 	struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);
 	int cci_result_ct_x2 = 0;
+	
 	 // add first H/L thd when cci_result_ct get end
 	unsigned long value = 0;
 	int ret, i;	
@@ -1935,7 +1946,7 @@ static ssize_t stk_ps_cali_store(struct device *dev, struct device_attribute *at
 	//struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);	
 	
 #ifdef LightSensorK	
-	for (i = 0; i < 7; i++)
+	for (i = 0; i < 9; i++)
 #else
 	for (i = 0; i < 5; i++)
 #endif
@@ -1994,27 +2005,46 @@ static ssize_t stk_ps_cali_store(struct device *dev, struct device_attribute *at
 	}	
 	cci_als_value = value;	
 
-	printk(KERN_INFO "%s: cci_als_value = %d\n", __func__, cci_als_value);	
-#ifdef LightSensorK
-	if((ret = strict_strtoul(token[5], 16, &value)) < 0)
-	{
-		printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
-		return ret;
-	}
-	cci_als_value_cali = value;
+	printk(KERN_INFO "%s: cci_als_value = %d\n", __func__, cci_als_value);
 
+
+	if((ret = strict_strtoul(token[5], 16, &value)) < 0)
+        {
+                printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
+                return ret;
+        }
+        cci_als_test_adc = value;
+
+        printk(KERN_INFO "%s: cci_als_test_adc = %d\n", __func__, cci_als_test_adc);	
+
+	
+#ifdef LightSensorK
 	if((ret = strict_strtoul(token[6], 16, &value)) < 0)
+	{
+		printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__,ret);
+                return ret;
+        }
+	cci_als_value_cali=value;
+
+	if((ret = strict_strtoul(token[7], 16, &value)) < 0)
 	{
 		printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
 		return ret;
 	}
 	cci_transmittance_cali = value;
 	ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
+	
+	if((ret = strict_strtoul(token[8], 16, &value)) < 0)
+        {
+                printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
+                return ret;
+        }
+        cci_als_value_cali_adc = value;
 #endif	
 	return size;
 }
 
-#endif	/* #ifdef STK_TUNE0 */
+#endif	// #ifdef STK_TUNE0 
 
 
 //Colby add for CCI calibration start
@@ -2051,11 +2081,9 @@ static inline uint32_t stk3x1x_get_als_reading_AVG(struct stk3x1x_data *ps_data,
 	sAveAlsData /= sSampleNo;
 	return sAveAlsData;
 }
-
-static ssize_t ps_CCI_cali_BC_15mm_show(struct device *dev, struct device_attribute *attr, char *buf)
+//static ssize_t ps_CCI_cali_BC_15mm_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t ps_CCI_cali_GC_30mm_Low_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-//not ready
-	//PS cal Black card 1.5 cm
 	struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);	
 	uint32_t reading;
 
@@ -2082,31 +2110,30 @@ static ssize_t ps_CCI_cali_BC_15mm_show(struct device *dev, struct device_attrib
 	//set default THD as ps_thd_h = 0, ps_thd_l = 0 to ensure int trigger
 	ps_data->ps_thd_h = 0;
 	ps_data->ps_thd_l = 0;				
-	printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_15mm_show() ps_data->ps_thd_h = %d, ps_data->ps_thd_l = %d\n", __FUNCTION__, ps_data->ps_thd_h, ps_data->ps_thd_l);
+	printk(KERN_INFO "%s: [Colby] ps_CCI_cali_GC_30mm_Low_show() ps_data->ps_thd_h = %d, ps_data->ps_thd_l = %d\n", __FUNCTION__, ps_data->ps_thd_h, ps_data->ps_thd_l);
 	stk3x1x_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
 	stk3x1x_set_ps_thd_l(ps_data, ps_data->ps_thd_l);
 	//add for FTM interrupt check 20130424  end
 
 	//uint32_t cci_ps_high_thd;
 	//get ps code for 5 times
-	printk(KERN_ERR "%s:[Colby][STK]Start calibrating with Black Card 1.5 cm...\n", __func__);
+	printk(KERN_ERR "%s:[Colby][STK]Start calibrating with Gray Card 3.0 cm...\n", __func__);
 	msleep(150);
 	reading = stk3x1x_get_ps_reading_AVG(ps_data, 5);
 
-	cci_ps_high_thd = reading; //*****************This is F2N threshold***************
-	printk(KERN_ERR "%s:[Colby][STK]calibrating with Black Card 1.5 cm done!!!!! cci_ps_high_thd = %d\n", __func__, cci_ps_high_thd);
-	return scnprintf(buf, PAGE_SIZE, "cci_ps_high_thd = %d\n", cci_ps_high_thd);
+	cci_ps_low_thd = reading; //*****************This is F2N threshold***************
+	printk(KERN_ERR "%s:[Colby][STK]calibrating with Gray Card 3.0 cm done!!!!! cci_ps_low_thd = %d\n", __func__, cci_ps_low_thd);
+	return scnprintf(buf, PAGE_SIZE, "cci_ps_low_thd = %d\n", cci_ps_low_thd);
 }
 
 static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-//not ready
-	//Test PS Black card CT
+	//Test PS Gray card CT
 	struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);	
 	uint32_t reading;
 	//uint32_t cci_ps_low_thd;
 	//uint32_t cci_result_ct;
-	int Diff_ThdH_CT;
+	int Diff_ThdL_CT;
 	//get ps code for 5 times
 	printk(KERN_ERR "%s:[Colby][STK]Start calibrating CT...\n", __func__);
 	reading = stk3x1x_get_ps_reading_AVG(ps_data, 5);
@@ -2114,12 +2141,12 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	cci_result_ct = reading;//*****************This is CT***************
 
 
-	Diff_ThdH_CT = cci_ps_high_thd - cci_result_ct;
+	Diff_ThdL_CT = cci_ps_low_thd - cci_result_ct;
 	//when IT=0x73 and LED CURRENT=100mA, (ps_close-ps_ct) should be bigger than 75
 	//Optical team change the range from 75 to 100. 20130117
-	if(Diff_ThdH_CT > 100){
+	if(Diff_ThdL_CT > 100){
 		//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
-		cci_ps_low_thd = cci_result_ct + (Diff_ThdH_CT*7)/10; //*****************This is N2F value*************** set 3:7 for H/L/CT
+		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT+PS_H_L_DIFF; //*****************This is N2F value*************** set 3:7 for H/L/CT
 
 		//add for FTM interrupt check 20130424 start
 		printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_ct_show() cci_ps_high_thd = %d, cci_ps_low_thd = %d\n", __FUNCTION__, cci_ps_high_thd, cci_ps_low_thd);
@@ -2131,26 +2158,42 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 		//add for FTM interrupt check 20130424  end
 
 		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT successfully----------------\n");
-		printk(KERN_ERR "[Colby][STK]cci_ps_low_thd = %d\n", cci_ps_low_thd);
+		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
 		}
 	else{
-		cci_ps_low_thd = 0;
+		cci_ps_high_thd = 0;
 		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT fail----------------\n");
-		printk(KERN_ERR "[Colby][STK]cci_ps_low_thd = %d\n", cci_ps_low_thd);
+		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
 		}
 
-	printk(KERN_ERR "[Colby][STK]cci_result_ct = %d, Diff_ThdH_CT = %d, cci_ps_low_thd = %d\n", cci_result_ct, Diff_ThdH_CT, cci_ps_low_thd);
+	printk(KERN_ERR "[Colby][STK]cci_result_ct = %d, Diff_ThdH_CT = %d, cci_ps_low_thd = %d\n", cci_result_ct, Diff_ThdL_CT, cci_ps_high_thd);
 
-	return scnprintf(buf, PAGE_SIZE, "cci_result_ct = %d, cci_ps_low_thd = %d\n", cci_result_ct, cci_ps_low_thd);
+	return scnprintf(buf, PAGE_SIZE, "cci_result_ct = %d, cci_ps_high_thd = %d\n", cci_result_ct, cci_ps_high_thd);
 }
+	
+static ssize_t ps_Pin_sensor_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);	
+	int32_t ret = stk3x1x_check_pid(ps_data);
+	if(ret >= 0){
+		 printk("STK check PID = %d success\n",ret);
+    		 return scnprintf(buf, PAGE_SIZE,"[stk] I2C Work, PID = %x\n",ret);
+		}
+	else{
+		 printk("STK check PID = %d fail\n",ret);
+    		 return scnprintf(buf, PAGE_SIZE,"[stk] I2C mayFail!\n Check PID = %x number\n",ret);
+		}
+}
+	
 static ssize_t ps_CCI_INTERRUPT_count_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	printk("SKT count INTERRUPT = %d \n",CCI_FTM_INTERRUPT);
+	printk("STK count INTERRUPT = %d \n",CCI_FTM_INTERRUPT);
      return scnprintf(buf, PAGE_SIZE,"%d \n",CCI_FTM_INTERRUPT);
 
 }
 
-static ssize_t ps_CCI_test_BC_show(struct device *dev, struct device_attribute *attr, char *buf)
+//static ssize_t ps_CCI_test_BC_show(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t ps_CCI_test_GC_10mm_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 //not ready
 	//Test black card cover
@@ -2172,13 +2215,13 @@ static ssize_t ps_CCI_test_BC_show(struct device *dev, struct device_attribute *
 		//printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d\n", ps_test_cover, cci_ps_cover);
 		//return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d\n", ps_test_cover, cci_ps_cover);
 		if(CCI_FTM_INTERRUPT != 0){
-			printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
-			return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
+			printk(KERN_ERR "[Colby][STK]Test PS Gray card 1.0 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
+			return scnprintf(buf, PAGE_SIZE, "Test PS Gray card 1.0 cm SUCCESS: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
 			}
 		else{
 			ps_test_cover = false;
-			printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
-			return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
+			printk(KERN_ERR "[Colby][STK]Test PS Gray card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
+			return scnprintf(buf, PAGE_SIZE, "Test PS Gray card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
 			}
 		//add for FTM interrupt check 20130424 start
 		}
@@ -2190,12 +2233,12 @@ static ssize_t ps_CCI_test_BC_show(struct device *dev, struct device_attribute *
 		//printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d\n", ps_test_cover, cci_ps_cover);
 		//return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d\n", ps_test_cover, cci_ps_cover);
 		if(CCI_FTM_INTERRUPT != 0){
-			printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
-			return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
+			printk(KERN_ERR "[Colby][STK]Test PS Gray card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
+			return scnprintf(buf, PAGE_SIZE, "Test PS Gray card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT PASS\n", ps_test_cover, cci_ps_cover);
 			}
 		else{
-			printk(KERN_ERR "[Colby][STK]Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
-			return scnprintf(buf, PAGE_SIZE, "Test PS Black card 0.8 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
+			printk(KERN_ERR "[Colby][STK]Test PS Black card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
+			return scnprintf(buf, PAGE_SIZE, "Test PS Gray card 1.0 cm FAIL: ps_test_cover = %d, g_result_ps_cover = %d, INT FAIL\n", ps_test_cover, cci_ps_cover);
 			}
 		//add for FTM interrupt check 20130424 start
 		}
@@ -2217,8 +2260,8 @@ static ssize_t als_CCI_test_Light_show(struct device *dev, struct device_attribu
 	cci_als_value = stk_alscode2lux(ps_data, als_reading);
 	//cci_als_value = als_reading; //return raw data only
 	mutex_unlock(&ps_data->io_lock);
-	printk(KERN_ERR "%s:[#23][STK]Start testing light done!!! cci_als_value = %d lux\n", __func__, cci_als_value);
-	return scnprintf(buf, PAGE_SIZE, "cci_als_value = %d lux\n", cci_als_value);
+	printk(KERN_ERR "%s:[#23][STK]Start testing light done!!! cci_als_value = %d lux, cci_als_test_adc = %d \n", __func__, cci_als_value,als_reading);
+	return scnprintf(buf, PAGE_SIZE, "cci_als_value = %d lux, cci_als_test_adc = %d \n", cci_als_value,als_reading);
 }
 
 static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -2313,11 +2356,11 @@ static struct device_attribute ps_nvdata_attribute = __ATTR(nvdata,0664,stk_ps_s
 static struct device_attribute ps_cali_attribute = __ATTR(cali,0664,stk_ps_cali_show, stk_ps_cali_store); //[Bug524]modify permission for CTS
 #endif
 //Colby add for CCI calibration start
-static struct device_attribute ps_CCI_cali_BC_15mm = __ATTR(BC_15mm,0664,ps_CCI_cali_BC_15mm_show, NULL);
-static struct device_attribute ps_CCI_cali_BC_ct = __ATTR(BC_ct,0664,ps_CCI_cali_BC_ct_show, NULL);
-static struct device_attribute ps_CCI_test_BC = __ATTR(test_BC,0664,ps_CCI_test_BC_show, NULL);
+static struct device_attribute ps_CCI_cali_GC_30mm_Low = __ATTR(GC_30mm_Low,0664,ps_CCI_cali_GC_30mm_Low_show, NULL);//ps_CCI_cali_GC_30mm_Low_show   ps_CCI_cali_BC_15mm
+static struct device_attribute ps_CCI_cali_BC_ct = __ATTR(BC_ct,0664,ps_CCI_cali_BC_ct_show, NULL);//   ps_CCI_cali_BC_ct_show
+static struct device_attribute ps_CCI_test_GC_10mm = __ATTR(test_GC_10mm,0664,ps_CCI_test_GC_10mm_show, NULL);
 //Colby add for CCI calibration end
-
+static struct device_attribute ps_Pin_Sensor = __ATTR(Pin_Sensor,0664,ps_Pin_sensor_show,NULL);
 static struct device_attribute ps_CCI_INTERRUPT_count= __ATTR(INTERRUPT_count,0664,ps_CCI_INTERRUPT_count_show, NULL);
 static struct attribute *stk_ps_attrs [] =
 {
@@ -2332,10 +2375,11 @@ static struct attribute *stk_ps_attrs [] =
 	&send_attribute.attr,	
 	&all_reg_attribute.attr,
 	&status_attribute.attr,
-	&ps_CCI_cali_BC_15mm.attr,
+	&ps_CCI_cali_GC_30mm_Low.attr,
 	&ps_CCI_cali_BC_ct.attr,
-	&ps_CCI_test_BC.attr,
+	&ps_CCI_test_GC_10mm.attr,
 	&ps_CCI_INTERRUPT_count.attr,
+	&ps_Pin_Sensor.attr,
 #ifdef STK_TUNE0
 	&ps_cali_attribute.attr,
 	&ps_nvdata_attribute.attr,
@@ -2950,7 +2994,8 @@ static int32_t stk3x1x_init_all_setting(struct i2c_client *client, struct stk3x1
 	ret = stk3x1x_check_pid(ps_data);
 	if(ret < 0)
 		return ret;
-	
+	else if(ret==0)
+		printk("[stk] check sensor type!\n");
 	
 	ret = stk3x1x_init_all_reg(ps_data, plat_data);
 	if(ret < 0)
@@ -3449,12 +3494,37 @@ static int stk3x1x_probe(struct i2c_client *client,
 		printk(KERN_ERR "%s:could not create sysfs group for als\n", __func__);
 		goto err_als_sysfs_create_group;
 	}
+	/* create sysfs link for als */
+	als_sysfs_link = kobject_create_and_add("als", NULL);
+	
+	if (als_sysfs_link != NULL) {
+		err = sysfs_create_link(als_sysfs_link, &ps_data->als_input_dev->dev.kobj, "link");	
+	} 
+	else {
+		err = -ENODEV;
+	}
+	if (err < 0) {
+		printk("could not create sysfs link for als\n");
+		goto err_als_sysfs_link;
+	}
 	err = sysfs_create_group(&ps_data->ps_input_dev->dev.kobj, &stk_ps_attribute_group);
 	if (err < 0) 
 	{
 		printk(KERN_ERR "%s:could not create sysfs group for ps\n", __func__);
 		goto err_ps_sysfs_create_group;
 	}
+	ps_sysfs_link = kobject_create_and_add("ps", NULL);
+	
+	if (ps_sysfs_link != NULL) {
+		err = sysfs_create_link(ps_sysfs_link, &ps_data->ps_input_dev->dev.kobj, "link");	
+	} else {
+		err = -ENODEV;
+	}
+	if (err < 0) {
+		printk("could not create sysfs link for ps\n");
+		goto err_ps_sysfs_link;
+	}
+
 	input_set_drvdata(ps_data->als_input_dev, ps_data);
 	input_set_drvdata(ps_data->ps_input_dev, ps_data);	
 
@@ -3533,9 +3603,13 @@ err_stk3x1x_setup_irq:
 #endif	
 #if (!defined(STK_POLL_ALS) || !defined(STK_POLL_PS))
 	destroy_workqueue(ps_data->stk_wq);	
-#endif	
+#endif
+	sysfs_remove_link(ps_sysfs_link, "ps");
+err_ps_sysfs_link:	
 	sysfs_remove_group(&ps_data->ps_input_dev->dev.kobj, &stk_ps_attribute_group);	
 err_ps_sysfs_create_group:	
+	sysfs_remove_link(als_sysfs_link, "als");
+err_als_sysfs_link:
 	sysfs_remove_group(&ps_data->als_input_dev->dev.kobj, &stk_als_attribute_group);	
 err_als_sysfs_create_group:	
 	input_unregister_device(ps_data->ps_input_dev);		
