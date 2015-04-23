@@ -105,6 +105,17 @@
 			bias-disable;
 		};
 	};
+
+	stk3x1x_int_pin {
+		qcom,pins = <&gp 40>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <1>;
+		label = "stk3x1x-irq";
+		stk3x1x_default: stk3x1x_default {
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
 };
 
 &pm8994_vadc {
@@ -711,6 +722,20 @@
 				  1 &msm_gpio 11 1
 				>;
 		interrupt-names = "silabs_fm_int", "silabs_fm_status_int";
+	};
+};
+
+&i2c_7 {
+	stk3x1x@48 {
+		compatible = "stk,stk3x1x";
+		reg = <0x48>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&stk3x1x_default>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <40 0x8>;
+		vdd-supply = <&pm8994_lvs2>;
+		vio-supply = <&pm8994_l18>;
+		stk,irq-gpio = <&msm_gpio 40 0x8>;
 	};
 };
 
