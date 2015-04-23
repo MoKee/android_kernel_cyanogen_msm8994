@@ -799,6 +799,14 @@
 	};
 };
 
+&i2c_15 {
+	lsm6ds3@6b {
+		compatible = "st,lsm6ds3";
+		reg = <0x6b>;
+		vdd-supply = <&pm8994_lvs2>;
+	};
+};
+
 /{
 	mtp_batterydata: qcom,battery-data {
 		qcom,batt-id-range-pct = <15>;
