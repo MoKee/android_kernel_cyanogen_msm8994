@@ -882,5 +882,7 @@ config SENSORS_ISL29044A
 
 source "drivers/input/misc/lsm6ds3/Kconfig"
 
+source "drivers/input/misc/yas537/Kconfig"
+
 endif
 
