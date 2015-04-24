@@ -104,6 +104,12 @@ config INPUT_HBTP_INPUT
 	  To compile this driver as a module, choose M here: the
 	  module will be called hbtp_input.
 
+config INPUT_HSPPAD038
+	tristate "HSPPAD038 Pressure Sensor Driver"
+	depends on I2C
+	help
+	  Say Y to enable ALPS Electric HSPPAD038 Pressure sensor.
+
 config INPUT_PCSPKR
 	tristate "PC Speaker support"
 	depends on PCSPKR_PLATFORM
