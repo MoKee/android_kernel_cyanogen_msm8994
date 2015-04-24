@@ -811,6 +811,12 @@
 		reg = <0x2e>;
 		vdd-supply = <&pm8994_lvs2>;
 	};
+
+	hsppad038@48 {
+		compatible = "hsppad038";
+		reg = <0x48>;
+		vdd-supply = <&pm8994_lvs2>;
+	};
 };
 
 /{
