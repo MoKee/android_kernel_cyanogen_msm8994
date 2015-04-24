@@ -805,6 +805,12 @@
 		reg = <0x6b>;
 		vdd-supply = <&pm8994_lvs2>;
 	};
+
+	yas537@2e {
+		compatible = "qcom,yas537";
+		reg = <0x2e>;
+		vdd-supply = <&pm8994_lvs2>;
+	};
 };
 
 /{
