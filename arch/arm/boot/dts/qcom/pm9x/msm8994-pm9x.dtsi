@@ -440,26 +440,6 @@
 			gpio-key,wakeup;
 			debounce-interval = <15>;
 		};
-
-		cam_snapshot {
-			label = "cam_snapshot";
-			gpios = <&pm8994_gpios 4 0x1>;
-			linux,input-type = <1>;
-			linux,code = <766>;
-			gpio-key,wakeup;
-			debounce-interval = <15>;
-		};
-
-		cam_focus {
-			label = "cam_focus";
-			gpios = <&pm8994_gpios 5 0x1>;
-			linux,input-type = <1>;
-			linux,code = <528>;
-			gpio-key,wakeup;
-			debounce-interval = <15>;
-		};
-
-
 	};
 
 	sound {
@@ -566,22 +546,6 @@
 		status = "okay";
 	};
 
-	gpio@c300 { /* GPIO 4 */
-		qcom,mode = <0>;
-		qcom,pull = <0>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		status = "okay";
-	};
-
-	gpio@c400 { /* GPIO 5 */
-		qcom,mode = <0>;
-		qcom,pull = <0>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		status = "okay";
-	};
-
 	gpio@c700 { /* GPIO 8 */
 		qcom,mode = <0>;                /* Digital in */
 		qcom,pull = <0>;                /* PULL up 30uA */
@@ -679,26 +643,6 @@
 
 		qcom,cdc-on-demand-supplies = "cdc-vdd-spkdrv",
 					      "cdc-vdd-spkdrv-2";
-	};
-};
-
-&pmi8994_gpios {
-	gpio@c000 {	/* GPIO 1  Ultrasound PA EN */
-		qcom,mode = <1>;	/* DIGITAL OUT */
-		qcom,pull = <5>;	/* No Pull */
-		qcom,vin-sel = <2>;	/* 1.8 */
-		qcom,src-sel = <0>;	/* CONSTANT */
-		qcom,master-en = <1>;	/* ENABLE GPIO */
-		status = "okay";
-	};
-
-	gpio@c400 {	/* GPIO 5  OTG SWITCH EN */
-		qcom,mode = <1>;	/* DIGITAL OUT */
-		qcom,pull = <5>;	/* No Pull */
-		qcom,vin-sel = <2>;	/* 1.8 */
-		qcom,src-sel = <0>;	/* GPIO */
-		qcom,master-en = <1>;	/* ENABLE GPIO */
-		status = "okay";
 	};
 };
 
