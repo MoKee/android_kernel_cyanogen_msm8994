@@ -2911,7 +2911,27 @@ static int silabs_fm_vidioc_s_ctrl(struct file *file, void *priv,
 		}
 		break;
 	case V4L2_CID_PRIVATE_SILABS_SOFT_MUTE:
-		retval = 0;
+		if (ctrl->value == 0 || ctrl->value == 1) {
+
+			retval = set_property(radio,
+						FM_SOFT_MUTE_MAX_ATTENUATION_PROP,
+						ctrl->value ? 0x0010 : 0x0000);
+
+			if (retval < 0)
+				FMDERR("Setting soft_mute FM_SOFT_MUTE_MAX_ATTENUATION_PROP failed\n");
+
+			retval = set_property(radio,
+						FM_SOFT_MUTE_SNR_THRESHOLD_PROP,
+						ctrl->value ? 0x0004 : 0x0000);
+
+			if (retval < 0)
+				FMDERR("Setting FM_SOFT_MUTE_SNR_THRESHOLD_PROP failed\n");
+
+		} else	{
+			retval = -EINVAL;
+			FMDERR("%s: soft_mute type is not valid\n", __func__);
+			goto end;
+		}
 		break;
 	case V4L2_CID_PRIVATE_SILABS_REGION:
 	case V4L2_CID_PRIVATE_SILABS_SRCH_ALGORITHM:
