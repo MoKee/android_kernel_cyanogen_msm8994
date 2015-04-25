@@ -3509,6 +3509,12 @@ static int msm8994_asoc_machine_probe(struct platform_device *pdev)
 		dev_info(&pdev->dev, "msm8994_prepare_us_euro failed (%d)\n",
 			ret);
 
+	mbhc_cfg.gpio_level_insert = of_property_read_bool(
+					pdev->dev.of_node,
+					"qcom,headset-jack-type-NC");
+	dev_dbg(&pdev->dev, "gpio_level_insert (%d)\n",
+		mbhc_cfg.gpio_level_insert);
+
 	/* Parse pinctrl info from devicetree */
 	ret = msm_get_pinctrl(pdev);
 	if (!ret) {
