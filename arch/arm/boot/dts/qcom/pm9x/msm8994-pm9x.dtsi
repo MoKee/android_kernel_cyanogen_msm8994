@@ -480,6 +480,7 @@
 		qcom,us-euro-gpios = <&pm8994_mpps 2 0>;
 		qcom,cdc-micbias2-headset-only;
 		qcom,mbhc-audio-jack-type = "6-pole-jack";
+		/delete-property/ qcom,headset-jack-type-NC;
 		qcom,ext-ult-spk-amp-gpio = <&pmi8994_gpios 1 0>;
 		qcom,hdmi-audio-rx;
 		asoc-codec = <&stub_codec>, <&hdmi_audio>;
