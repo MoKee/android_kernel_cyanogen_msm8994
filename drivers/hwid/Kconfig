@@ -1,0 +1,7 @@
+#
+# CEI HARDWARE ID drivers
+#
+
+config CEI_HARDWARE_ID
+	bool "CEI Hardware ID Module"
+
