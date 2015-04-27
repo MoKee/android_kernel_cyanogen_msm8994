@@ -151,6 +151,23 @@
 			bias-pull-up;
 		};
 	};
+
+	cei_hwid {
+		qcom,pins = <&gp 75>, <&gp 77>, <&gp 102>, <&gp 30>, <&gp 34>, <&gp 32>, <&gp 16>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <7>;
+		label = "cci_hwid_pinctrl";
+
+		hwid_active: hwid_active {
+			drive-strength = <2>; /* 2 MA */
+			bias-disable; /* NO pull */
+		};
+
+		hwid_suspend: hwid_suspend {
+			drive-strength = <2>; /* 2 MA */
+			bias-disable; /* NO pull */
+		};
+	};
 };
 
 &pm8994_vadc {
@@ -535,6 +552,21 @@
 			<&dma_blsp1 21 32 0x20000020 0x20>;
 		dma-names = "tx", "rx";
 		qcom,master-id = <86>;
+	};
+
+	cei_gpio_hwid {
+		compatible = "cei,gpio-hwid";
+		pinctrl-names = "cei_hwid_pinctrl_active","cei_hwid_pinctrl_suspend";
+		pinctrl-0 = <&hwid_active>;
+		pinctrl-1 = <&hwid_suspend>;
+
+		cei,project_id1_gpio = <&msm_gpio 34 0>;
+		cei,project_id2_gpio = <&msm_gpio 30 0>;
+		cei,hw_id1_gpio = <&msm_gpio 102 0>;
+		cei,hw_id2_gpio = <&msm_gpio 77 0>;
+		cei,hw_id3_gpio = <&msm_gpio 75 0>;
+		cei,ddr_id-gpio = <&msm_gpio 32 0>;
+		cei,touch_id-gpio = <&msm_gpio 16 0>;
 	};
 };
 
