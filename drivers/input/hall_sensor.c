@@ -38,6 +38,8 @@ struct hall_data {
 	struct regulator *vddio;
 	u32 min_uv;	/* device allow minimum voltage */
 	u32 max_uv;	/* device allow max voltage */
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pin_default;
 };
 
 static irqreturn_t hall_interrupt_handler(int irq, void *dev)
@@ -189,6 +191,34 @@ static int hall_parse_dt(struct device *dev, struct hall_data *data)
 
 	return 0;
 }
+
+static int hall_pinctrl_init(struct device *dev, struct hall_data *data)
+{
+	int err;
+
+	data->pinctrl = devm_pinctrl_get(dev);
+	if (IS_ERR_OR_NULL(data->pinctrl)) {
+		dev_err(dev, "failed to get pinctrl\n");
+		goto gpio_pinctrl_err;
+	}
+
+	data->pin_default = pinctrl_lookup_state(data->pinctrl, "default");
+	if (IS_ERR_OR_NULL(data->pin_default)) {
+		dev_err(dev, "failed to look up default state\n");
+		goto gpio_pinctrl_err;
+	}
+
+	err = pinctrl_select_state(data->pinctrl, data->pin_default);
+	if (err) {
+		dev_err(dev, "can't select pinctrl default state\n");
+		return err;
+	}
+
+	return 0;
+gpio_pinctrl_err:
+	return -EINVAL;
+}
+
 #else
 static int hall_parse_dt(struct device *dev, struct hall_data *data)
 {
@@ -215,6 +245,11 @@ static int hall_driver_probe(struct platform_device *dev)
 		err = hall_parse_dt(&dev->dev, data);
 		if (err < 0) {
 			dev_err(&dev->dev, "Failed to parse device tree\n");
+			goto exit;
+		}
+		err = hall_pinctrl_init(&dev->dev, data);
+		if (err < 0) {
+			dev_err(&dev->dev, "Failed to setup gpio pinctrl\n");
 			goto exit;
 		}
 	} else if (dev->dev.platform_data != NULL) {
