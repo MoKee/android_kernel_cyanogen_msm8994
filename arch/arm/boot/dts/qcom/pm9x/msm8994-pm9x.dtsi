@@ -778,6 +778,8 @@
 
 &pmi8994_haptics {
 	status = "okay";
+	qcom,actuator-type = "erm";
+	qcom,ilim-ma = <100>;
 };
 
 &pmi8994_charger {
