@@ -81,6 +81,18 @@
 	status = "ok";
 };
 
+&pm8994_l3 {
+	regulator-min-microvolt = <1100000>;
+	regulator-max-microvolt = <1100000>;
+	qcom,init-voltage = <1100000>;
+};
+
+&pm8994_l17 {
+	regulator-min-microvolt = <2500000>;
+	regulator-max-microvolt = <2500000>;
+	qcom,init-voltage = <2500000>;
+};
+
 &ufsphy1 {
 	status = "ok";
 };
