@@ -2034,9 +2034,16 @@ static ssize_t stk_ps_cali_store(struct device *dev, struct device_attribute *at
 		printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
 		return ret;
 	}
-	cci_transmittance_cali = value;
-	ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
 	
+	cci_transmittance_cali = value;
+	if(cci_transmittance_cali !=0)
+		ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
+	else
+	{
+		ps_data->als_transmittance = stk3x1x_pfdata_QCT.transmittance;
+		printk(KERN_ERR "%s:[STK]error. transmittance be set to default value= %d\n", __func__,stk3x1x_pfdata_QCT.transmittance);
+
+	}
 	if((ret = strict_strtoul(token[8], 16, &value)) < 0)
         {
                 printk(KERN_ERR "%s:[STK]strict_strtoul failed, ret=0x%x\n", __func__, ret);
@@ -2137,6 +2144,7 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	//uint32_t cci_ps_low_thd;
 	//uint32_t cci_result_ct;
 	int Diff_ThdL_CT;
+	bool result = false;
 	//get ps code for 5 times
 	printk(KERN_ERR "%s:[Colby][STK]Start calibrating CT...\n", __func__);
 	reading = stk3x1x_get_ps_reading_AVG(ps_data, 5);
@@ -2149,7 +2157,7 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	//Optical team change the range from 75 to 100. 20130117
 	if(Diff_ThdL_CT > 100){
 		//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
-		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT+PS_H_L_DIFF; //*****************This is N2F value*************** set 3:7 for H/L/CT
+		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT+PS_H_L_DIFF; //*****************This is N2F value*************** set L+PS_H_L_DIFF=H
 
 		//add for FTM interrupt check 20130424 start
 		printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_ct_show() cci_ps_high_thd = %d, cci_ps_low_thd = %d\n", __FUNCTION__, cci_ps_high_thd, cci_ps_low_thd);
@@ -2162,16 +2170,18 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 
 		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT successfully----------------\n");
 		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
+		result = true;
 		}
 	else{
 		cci_ps_high_thd = 0;
 		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT fail----------------\n");
 		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
+		result = false;
 		}
 
-	printk(KERN_ERR "[Colby][STK]cci_result_ct = %d, Diff_ThdH_CT = %d, cci_ps_low_thd = %d\n", cci_result_ct, Diff_ThdL_CT, cci_ps_high_thd);
+	printk(KERN_ERR "[Colby][STK]cci_result_ct = %d, Diff_ThdL_CT = %d, cci_ps_high_thd = %d\n", cci_result_ct, Diff_ThdL_CT, cci_ps_high_thd);
 
-	return scnprintf(buf, PAGE_SIZE, "cci_result_ct = %d, cci_ps_high_thd = %d\n", cci_result_ct, cci_ps_high_thd);
+	return scnprintf(buf, PAGE_SIZE, "%s: cci_result_ct = %d, cci_ps_high_thd = %d \n",  result ? "SUCCESS" : "FAIL", cci_result_ct, cci_ps_high_thd);
 }
 	
 static ssize_t ps_Pin_sensor_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -2273,6 +2283,7 @@ static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribu
 	struct stk3x1x_data *ps_data = dev_get_drvdata(dev);
 	int32_t als_reading;
 	unsigned int cci_als_value_cali_adc;
+	bool result =false;
 	printk(KERN_ERR "%s:[#23][STK]Start Cali light...\n", __func__);
 	msleep(150);
 	//als_reading = stk3x1x_get_als_reading(ps_data);
@@ -2283,20 +2294,21 @@ static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribu
 	//cci_als_value_cali = als_reading; //return raw data only, ADC code
 
 	//compute transmittance for ALS calibration start
-
 	if(((cci_als_value_cali * ps_data->als_transmittance)/500) > 0){ //if cci_als_value_cali = 0, the cci_transmittance_cali will be always 0, so skip it.
 		cci_transmittance_cali = (cci_als_value_cali * ps_data->als_transmittance)/500; //transmittance for cali
 		ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
 		printk(KERN_ERR "%s:[#23][STK]cali light done!!! cci_als_value_cali = %d lux, cci_transmittance_cali = %d, cci_als_value_cali_adc = %d code\n", __func__, cci_als_value_cali, cci_transmittance_cali, cci_als_value_cali_adc);
+		result = true;
 		}
 	else{
-		printk(KERN_ERR "%s:[#23][STK]cali light fail!!! cci_transmittance_cali cannot be 0 \n", __func__);
+		printk(KERN_ERR "%s:[#23][STK]cali light fail!!! cci_als_value_cali = %d lux, cci_transmittance_cali = %d, cci_als_value_cali_adc = %d code\n", __func__, cci_als_value_cali, cci_transmittance_cali, cci_als_value_cali_adc);
+		result = false;
 		}
 	//compute transmittance for ALS calibration end
 
 	mutex_unlock(&ps_data->io_lock);
 	//printk(KERN_ERR "%s:[#23][STK]Start cali light done!!! cci_als_value_cali = %d lux, cci_transmittance_cali = %d\n", __func__, cci_als_value_cali, cci_transmittance_cali);
-	return scnprintf(buf, PAGE_SIZE, "cci_als_value_cali = %d lux, cci_transmittance_cali = %d, cci_als_value_cali_adc = %d code\n", cci_als_value_cali, cci_transmittance_cali, cci_als_value_cali_adc);
+	return scnprintf(buf, PAGE_SIZE, "%s: cci_als_value_cali = %d lux, cci_transmittance_cali = %d, cci_als_value_cali_adc = %d code\n", result ? "SUCCESS" : "FAIL", cci_als_value_cali, cci_transmittance_cali, cci_als_value_cali_adc);
 }
 
 //Colby add for CCI calibration end
