@@ -11,7 +11,7 @@
  */
 
 #include "../msm8994-pinctrl.dtsi"
-#include "../msm8994-camera-sensor-mtp.dtsi"
+#include "msm8994-camera-sensor-pm9x.dtsi"
 #include "synaptics-dsx-i2c.dtsi"
 
 / {
@@ -194,6 +194,28 @@
 		hwid_suspend: hwid_suspend {
 			drive-strength = <2>; /* 2 MA */
 			bias-disable; /* NO pull */
+		};
+	};
+
+	led_ktd_flash0_default {
+		qcom,pins = <&gp 14>, <&gp 94>, <&gp 93>;
+		qcom,num-grp-pins = <3>;
+		label = "led_ktd_flash0_default";
+
+		led_ktd_flash0_default: led_ktd_flash0_default {
+			drive-strength = <2>; /* 2 MA */
+			bias-disable; /* No PULL */
+		};
+	};
+
+	led_ktd_flash1_default {
+		qcom,pins = <&gp 8>, <&gp 29>, <&gp 57>;
+		qcom,num-grp-pins = <3>;
+		label = "led_ktd_flash1_default";
+
+		led_ktd_flash1_default: led_ktd_flash1_default {
+			drive-strength = <2>; /* 2 MA */
+			bias-disable; /* No PULL */
 		};
 	};
 };
