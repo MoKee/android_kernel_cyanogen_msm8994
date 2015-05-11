@@ -362,6 +362,18 @@
 			bias-disable = <0>;
 		};
 	};
+
+	silead_fp_shutdown_pin {
+		qcom,pins = <&gp 89>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "silead_fp_shutdown";
+		silead_fp_shutdown: default {
+			drive-strength = <16>;
+			output-high;
+			bias-disable;
+		};
+	};
 };
 
 &pm8994_vadc {
@@ -1085,6 +1097,19 @@
 		compatible = "hsppad038";
 		reg = <0x48>;
 		vdd-supply = <&pm8994_lvs2>;
+	};
+};
+
+&spi_26 {
+	silead,silead_fp@0 {
+		compatible = "silead_fp";
+		pinctrl-names = "default";
+		pinctrl-0 = <&silead_fp_shutdown>;
+		vio-supply = <&pm8994_lvs2>;
+		vdd-supply = <&pm8994_l18>;
+		reg = <0>;
+		spi-max-frequency = <50000000>;
+		shutdown_gpio = <&msm_gpio 89 0>;
 	};
 };
 
