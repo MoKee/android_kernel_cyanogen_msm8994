@@ -512,6 +512,9 @@ static int stk3x1x_i2c_smbus_write_byte_data(struct i2c_client *client, unsigned
 
 inline uint32_t stk_alscode2lux(struct stk3x1x_data *ps_data, uint32_t alscode)
 {
+	if (ps_data->als_transmittance == 0)
+		return 0;
+
 	alscode += ((alscode<<7)+(alscode<<3)+(alscode>>1));   
     alscode<<=3; 
     alscode/=ps_data->als_transmittance;
