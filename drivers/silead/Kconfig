@@ -1,0 +1,24 @@
+#
+# By warren Zhao
+#
+
+menuconfig SILEAD_DEVICE
+	bool "SILEAD class series devices"
+	default n
+
+if SILEAD_DEVICE
+
+config SLSHM
+	tristate "shared mem management driver"
+	default n
+        select SHMEM
+	help
+		support for IPC 
+
+config SLSPI_DRIVER
+	tristate "Silead FP spi deriver"
+	default n
+	help
+		support for IPC 
+
+endif
