@@ -448,11 +448,11 @@
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
 	qcom,mdss-dsi-bl-min-level = <1>;
 	qcom,mdss-dsi-bl-max-level = <4096>;
-	qcom,cont-splash-disabled;
+	qcom,cont-splash-enabled;
 };
 
 &dsi_sharp_qhd1_cmd {
-	qcom,cont-splash-disabled;
+	qcom,cont-splash-enabled;
 };
 
 
