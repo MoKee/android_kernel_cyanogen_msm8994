@@ -1614,12 +1614,14 @@ static int msm_get_pinctrl(struct platform_device *pdev)
 		pr_err("%s: could not get pri_mi2s pinstate\n", __func__);
 		goto err;
 	}
+#ifndef CONFIG_MACH_PM9X
 	pinctrl_info->tert_mi2s_active = pinctrl_lookup_state(pinctrl,
 						"tert_mi2s-active");
 	if (IS_ERR(pinctrl_info->tert_mi2s_active)) {
 		pr_err("%s: could not get tert_mi2s pinstate\n", __func__);
 		goto err;
 	}
+#endif
 	pinctrl_info->quat_mi2s_active = pinctrl_lookup_state(pinctrl,
 						"quat_mi2s-active");
 	if (IS_ERR(pinctrl_info->quat_mi2s_active)) {
