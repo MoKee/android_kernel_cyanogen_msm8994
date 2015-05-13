@@ -1670,6 +1670,8 @@ static int mxt_update_cfg(struct mxt_data *data, const struct firmware *cfg)
 	u8 *config_mem;
 	size_t config_mem_size;
 
+	TP_LOGI("Config starting update\n");
+
 	mxt_update_crc(data, MXT_COMMAND_REPORTALL, 1);
 
 	if (strncmp(cfg->data, MXT_CFG_MAGIC, strlen(MXT_CFG_MAGIC))) {
@@ -1813,6 +1815,8 @@ static int mxt_acquire_irq(struct mxt_data *data)
 
 static void mxt_free_input_device(struct mxt_data *data)
 {
+	TP_LOGI("start\n");
+
 	if (data->input_dev) {
 		input_unregister_device(data->input_dev);
 		data->input_dev = NULL;
@@ -2318,6 +2322,8 @@ static int mxt_initialize_t9_input_device(struct mxt_data *data)
 
 	data->input_dev = input_dev;
 
+	TP_LOGI("done\n");
+
 	return 0;
 
 err_free_mem:
@@ -2477,6 +2483,8 @@ static int mxt_initialize_t100_input_device(struct mxt_data *data)
 
 	data->input_dev = input_dev;
 
+	TP_LOGI("done\n");
+
 	return 0;
 
 err_free_mem:
@@ -2489,8 +2497,12 @@ static int mxt_configure_objects(struct mxt_data *data,
 
 static void mxt_config_cb(const struct firmware *cfg, void *ctx)
 {
+	TP_LOGI("start\n");
+
 	mxt_configure_objects(ctx, cfg);
 	release_firmware(cfg);
+
+	TP_LOGI("done\n");
 }
 
 static int mxt_initialize(struct mxt_data *data)
@@ -2623,6 +2635,8 @@ static int mxt_configure_objects(struct mxt_data *data,
 {
 	int error;
 
+	TP_LOGI("start\n");
+
 	error = mxt_init_t7_power_cfg(data);
 	if (error) {
 		TP_LOGE("Failed to initialize power cfg\n");
@@ -2646,6 +2660,26 @@ static int mxt_configure_objects(struct mxt_data *data,
 	} else {
 		TP_LOGW("No touch object detected\n");
 	}
+
+	/*
+	 * Register fb_notifier here to make sure the input_dev is
+	 * not NULL when mxt_suspend() and mxt_resume() are called.
+	 */
+#if defined(CONFIG_FB)
+	data->fb_notif.notifier_call = fb_notifier_callback;
+
+	error = fb_register_client(&data->fb_notif);
+	if (error) {
+		TP_LOGE("Unable to register fb_notifier: %d\n", error);
+		goto err_free_object_table;
+	}
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN +
+						MXT_SUSPEND_LEVEL;
+	data->early_suspend.suspend = mxt_early_suspend;
+	data->early_suspend.resume = mxt_late_resume;
+	register_early_suspend(&data->early_suspend);
+#endif
 
 	return 0;
 
@@ -3475,22 +3509,6 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		goto err_free_mem;
 	}
 
-#if defined(CONFIG_FB)
-	data->fb_notif.notifier_call = fb_notifier_callback;
-
-	error = fb_register_client(&data->fb_notif);
-	if (error) {
-		TP_LOGE("Unable to register fb_notifier: %d\n", error);
-		goto err_free_irq;
-	}
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN +
-						MXT_SUSPEND_LEVEL;
-	data->early_suspend.suspend = mxt_early_suspend;
-	data->early_suspend.resume = mxt_late_resume;
-	register_early_suspend(&data->early_suspend);
-#endif
-
 	/* setup regulators and enable */
 	mxt_probe_regulators(data);
 
@@ -3499,7 +3517,7 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	error = sysfs_create_group(&client->dev.kobj, &mxt_attr_group);
 	if (error) {
 		TP_LOGE("Failure %d creating sysfs group\n", error);
-		goto err_unregister_fb_notifier;
+		goto err_free_irq;
 	}
 
 	sysfs_bin_attr_init(&data->mem_access_attr);
@@ -3529,12 +3547,6 @@ err_remove_mem_access:
 	data->mem_access_attr.attr.name = NULL;
 err_remove_sysfs_group:
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
-err_unregister_fb_notifier:
-#if defined(CONFIG_FB)
-	fb_unregister_client(&data->fb_notif);
-#elif defined(CONFIG_HAS_EARLYSUSPEND)
-	unregister_early_suspend(&data->early_suspend);
-#endif
 err_free_irq:
 	free_irq(client->irq, data);
 err_free_mem:
@@ -3573,10 +3585,9 @@ static int mxt_suspend(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	mutex_lock(&input_dev->mutex);
+	TP_LOGI("start\n");
 
-	TP_LOGI("start, %u users that opened this device\n",
-			input_dev->users);
+	mutex_lock(&input_dev->mutex);
 
 	if (input_dev->users)
 		mxt_stop(data);
@@ -3592,10 +3603,9 @@ static int mxt_resume(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	mutex_lock(&input_dev->mutex);
+	TP_LOGI("start\n");
 
-	TP_LOGI("start, %u users that opened this device\n",
-			input_dev->users);
+	mutex_lock(&input_dev->mutex);
 
 	if (input_dev->users)
 		mxt_start(data);
