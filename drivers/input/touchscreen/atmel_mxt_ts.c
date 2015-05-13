@@ -223,7 +223,7 @@ struct t9_range {
 #define TP_LOG_LEVEL_DEBUG   8
 
 #ifdef TP_DYNAMIC_LOG
-static unsigned int tp_dynamic_log_level = TP_LOG_LEVEL_DEBUG;
+static unsigned int tp_dynamic_log_level = TP_LOG_LEVEL_INFO;
 
 #define tp_dynamic_print(level, fmt, arg...) \
 	do { \
