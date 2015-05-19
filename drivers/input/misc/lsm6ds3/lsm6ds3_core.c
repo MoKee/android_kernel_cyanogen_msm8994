@@ -207,6 +207,7 @@
 /* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 #define CEI_FTM_CALI				1
 #define CEI_FTM_SELF_TEST			1
+/* Calibration */
 #define LSM6DS3_ACC_CALI_FILE 	"/persist/accel_cali.conf"
 #define LSM6DS3_GYRO_CALI_FILE 	"/persist/gyro_cali.conf"
 #define LSM6DS3_DATA_BUF_NUM 	4
@@ -227,6 +228,27 @@
 #define GYRO_MIN_OFFSET_VAL			-1142
 #define VALID_CALI_FILE				0xAB
 #define OUT_RANGE_CALI_FILE			0xCD
+/* Self-test */
+#define LSM6DS3_CTRL1_XL_ADDR		0x10
+#define LSM6DS3_CTRL2_G_ADDR		0x11
+#define LSM6DS3_CTRL3_C_ADDR		0x12
+#define LSM6DS3_CTRL4_C_ADDR		0x13
+#define LSM6DS3_CTRL5_C_ADDR		0x14
+#define LSM6DS3_CTRL6_G_ADDR		0x15
+#define LSM6DS3_CTRL7_G_ADDR		0x16
+#define LSM6DS3_CTRL8_XL_ADDR		0x17
+#define LSM6DS3_CTRL9_XL_ADDR		0x18
+#define LSM6DS3_CTRL10_C_ADDR		0x19
+#define LSM6DS3_STATUS_REG_ADDR	0x1E
+#define LSM6DS3_STATUS_GDA_MASK	0x02
+#define LSM6DS3_STATUS_XLDA_MASK	0x01
+#define GYRO_SELF_TEST_MIN_VAL		3571
+#define GYRO_SELF_TEST_MAX_VAL		10000
+#define ACCEL_SELF_TEST_MIN_VAL		1475
+#define ACCEL_SELF_TEST_MAX_VAL		27868
+#define SELF_TEST_READ_TIMES			5
+static int gyro_self_test[3] = {0};
+static int accel_self_test[3] = {0};
 
 static int accel_xyz_offset[3] = {0};
 static int gyro_xyz_offset[3] = {0};
@@ -235,6 +257,10 @@ static bool gyro_first_enable = true;
 static int cei_read_offset_in_file(const char *filename, int *r_buf);
 static int cei_store_offset_in_file(const char *filename, int offset[3], int data_valid);
 /* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
+
+/* Grace add for register dump */
+#define LSM6DS3_FIRST_REG_ADDR		0x00
+#define LSM6DS3_REG_DUMP_SIZE		46
 
 static const struct lsm6ds3_sensor_name {
 	const char *name;
@@ -1202,6 +1228,8 @@ static int lsm6ds3_enable_sensors(struct lsm6ds3_sensor_data *sdata)
 {
 	int err, i;
 
+	pr_info("[Sensor] %s: enter , sdata->enabled=%d\n", __FUNCTION__ , sdata->enabled );
+
 	if (sdata->enabled)
 		return 0;
 
@@ -1312,6 +1340,8 @@ static int lsm6ds3_enable_sensors(struct lsm6ds3_sensor_data *sdata)
 static int lsm6ds3_disable_sensors(struct lsm6ds3_sensor_data *sdata)
 {
 	int err;
+
+	pr_info("[Sensor] %s: enter , sdata->enabled=%d\n", __FUNCTION__ , sdata->enabled );
 
 	if (!sdata->enabled)
 		return 0;
@@ -1944,6 +1974,27 @@ static ssize_t get_ping(struct device *dev,
 	return sprintf(buf, "0x6b:0x%02x\n", wai);
 }
 
+/* Grace add for register dump */
+static ssize_t get_reg_dump(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	int err, i;
+	struct lsm6ds3_sensor_data *sdata = dev_get_drvdata(dev);
+	u8 reg_dump[LSM6DS3_REG_DUMP_SIZE] = {0};
+	char buf2[30];
+
+	err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_FIRST_REG_ADDR,
+							LSM6DS3_REG_DUMP_SIZE, reg_dump, true);
+	for (i=0; i<LSM6DS3_REG_DUMP_SIZE; i++)
+	{
+		pr_info("[Sensor] %s: reg_dump[0x%02X]=0x%X\n", __FUNCTION__, i, reg_dump[i] );
+		sprintf(buf2, "reg_dump[0x%02X] = 0x%X\n", i, reg_dump[i] );
+		strcat(buf,buf2);
+	}
+
+	return strlen(buf);
+}
+
 #ifdef CEI_FTM_CALI
 static int cei_read_offset_in_file(const char *filename, int *r_buf)
 {
@@ -2326,25 +2377,543 @@ static ssize_t set_gyro_cali(struct device *dev, struct device_attribute *attr,
 static ssize_t get_accel_self_test(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%s\n", __func__);
+	pr_info("[Sensor] %s - %d , %d , %d\n",
+			__FUNCTION__ , accel_self_test[0] , accel_self_test[1], accel_self_test[2]);
+
+	if (accel_self_test[0]<ACCEL_SELF_TEST_MIN_VAL || accel_self_test[0] > ACCEL_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "X=%d , out of range\nFail\n", accel_self_test[0]);
+	}
+	if (accel_self_test[1]<ACCEL_SELF_TEST_MIN_VAL || accel_self_test[1] > ACCEL_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "Y=%d , out of range\nFail\n", accel_self_test[1]);
+	}
+	if (accel_self_test[2]<ACCEL_SELF_TEST_MIN_VAL || accel_self_test[2] > ACCEL_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "Z=%d , out of range\nFail\n", accel_self_test[2]);
+	}
+	else
+	{
+		return sprintf(buf, "%d , %d , %d\nPass\n", accel_self_test[0], accel_self_test[1], accel_self_test[2] );
+	}
 }
 
 static ssize_t set_accel_self_test(struct device *dev, struct device_attribute *attr,
 						const char *buf, size_t count)
 {
+	struct lsm6ds3_sensor_data *sdata = dev_get_drvdata(dev);
+	u8 current_enabled, w_buf, r_buf, data[6] = {0};
+	int err, ret, i, xyz[3]={0}, sum[3]={0}, out_nost[3]={0}, out_st[3]={0};
+	unsigned long start;
+
+	pr_info("[Sensor] %s , enter\n", __FUNCTION__ );
+
+	err = strict_strtoul(buf, 10, &start);
+	if (err)
+	{
+		pr_info("[Sensor] %s: strict_strtoul failed, error=0x%x\n", __FUNCTION__, err );
+		return err;
+	}
+
+	if(start==1)
+	{
+		accel_self_test[0] = accel_self_test[1] = accel_self_test[2] = 0;
+		current_enabled = sdata->enabled;
+		pr_info("[Sensor] %s: Start to do accel self-test , current_enabled=%d\n", __FUNCTION__, current_enabled);
+		mutex_lock(&sdata->cdata->bank_registers_lock);
+
+		/* Initialize sensor, turn on sensor, enable X/Y/Z axes */
+		/* Set BDU=1, FS=2G, ODR=52Hz */
+		w_buf = 0x30;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x44;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL3_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL6_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL8_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x38;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL9_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL10_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		pr_info("[Sensor] %s , initialize done\n", __FUNCTION__);
+		/* wait 200 for stable output */
+		msleep(200);
+		do {
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_set_accel_self_test_mutex_unlock;
+			}
+			ret = r_buf & LSM6DS3_STATUS_XLDA_MASK;
+			pr_info("[Sensor] %s , XLDA=%d\n", __FUNCTION__ , ret );
+			msleep(20);
+		} while (ret != 1);
+
+		/* Read first sample, then discard data */
+		err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_ACCEL_OUT_X_L_ADDR,
+								LSM6DS3_OUT_XYZ_SIZE, data, false);
+		if (err < 0)
+		{
+			pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		}
+		msleep(20);	//ODR-52Hz =>  1/52=0.019
+
+		/* Read the output registers after checking XLDA bit *5 times */
+		for (i=0; i<SELF_TEST_READ_TIMES; i++)
+		{
+			do {
+				err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+				if (err < 0)
+				{
+					pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+					goto lsm6ds3_set_accel_self_test_mutex_unlock;
+				}
+				ret = r_buf & LSM6DS3_STATUS_XLDA_MASK;
+				pr_info("[Sensor] %s , i=%d , XLDA=%d\n", __FUNCTION__ , i , ret );
+				msleep(20);
+			} while (ret != 1);
+
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_ACCEL_OUT_X_L_ADDR,
+									LSM6DS3_OUT_XYZ_SIZE, data, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_set_accel_self_test_mutex_unlock;
+			}
+			xyz[0] = (s32)((s16)(data[0] | (data[1] << 8)));
+			xyz[1] = (s32)((s16)(data[2] | (data[3] << 8)));
+			xyz[2] = (s32)((s16)(data[4] | (data[5] << 8)));
+			sum[0] += xyz[0];
+			sum[1] += xyz[1];
+			sum[2] += xyz[2];
+			pr_info("[Sensor] %s , (%d) %d , %d , %d\n", __FUNCTION__, i, xyz[0], xyz[1], xyz[2]);
+		}
+		out_nost[0] = sum[0] / SELF_TEST_READ_TIMES;
+		out_nost[1] = sum[1] / SELF_TEST_READ_TIMES;
+		out_nost[2] = sum[2] / SELF_TEST_READ_TIMES;
+		pr_info("[Sensor] %s , outX_nost=%d , outY_nost=%d , outZ_nost=%d\n",
+					__FUNCTION__, out_nost[0], out_nost[1], out_nost[2]);
+
+		/* Enable Accel Self Test */
+		pr_info("[Sensor] %s , Enable Accel self-test\n", __FUNCTION__);
+		w_buf = 0x01;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
+		/* wait for 200ms */
+		msleep(200);
+		do {
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_accel_self_test_exit;
+			}
+			ret = r_buf & LSM6DS3_STATUS_XLDA_MASK;
+			pr_info("[Sensor] %s , XLDA=%d\n", __FUNCTION__ , ret );
+			msleep(20);
+		} while (ret != 1);
+
+		/* Read first sample, then discard data */
+		err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_ACCEL_OUT_X_L_ADDR,
+								LSM6DS3_OUT_XYZ_SIZE, data, false);
+		if (err < 0)
+		{
+			pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+			goto lsm6ds3_accel_self_test_exit;
+		}
+		msleep(20);	//ODR52Hz =>  1/52=0.019
+
+		/* Read the output registers after checking XLDA bit *5 times */
+		xyz[0] = xyz[1] = xyz[2] = 0;
+		sum[0] = sum[1] = sum[2] = 0;
+		for (i=0; i<SELF_TEST_READ_TIMES; i++)
+		{
+			do {
+				err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+				if (err < 0)
+				{
+					pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+					goto lsm6ds3_accel_self_test_exit;
+				}
+				ret = r_buf & LSM6DS3_STATUS_XLDA_MASK;
+				pr_info("[Sensor] %s , i=%d , XLDA=%d\n", __FUNCTION__ , i , ret );
+				msleep(20);
+			} while (ret != 1);
+
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_ACCEL_OUT_X_L_ADDR,
+									LSM6DS3_OUT_XYZ_SIZE, data, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_accel_self_test_exit;
+			}
+			xyz[0] = (s32)((s16)(data[0] | (data[1] << 8)));
+			xyz[1] = (s32)((s16)(data[2] | (data[3] << 8)));
+			xyz[2] = (s32)((s16)(data[4] | (data[5] << 8)));
+			sum[0] += xyz[0];
+			sum[1] += xyz[1];
+			sum[2] += xyz[2];
+			pr_info("[Sensor] %s , (%d) %d , %d , %d\n", __FUNCTION__, i, xyz[0], xyz[1], xyz[2]);
+		}
+		out_st[0] = sum[0] / SELF_TEST_READ_TIMES;
+		out_st[1] = sum[1] / SELF_TEST_READ_TIMES;
+		out_st[2] = sum[2] / SELF_TEST_READ_TIMES;
+		pr_info("[Sensor] %s , outX_st=%d , outY_st=%d , outZ_st=%d\n",
+					__FUNCTION__, out_st[0], out_st[1], out_st[2]);
+
+		/* Store result */
+		accel_self_test[0] = abs(out_st[0] - out_nost[0]);
+		accel_self_test[1] = abs(out_st[1] - out_nost[1]);
+		accel_self_test[2] = abs(out_st[2] - out_nost[2]);
+		pr_info("[Sensor] %s , accel_self_test abs result -  %d , %d , %d\n",
+				__FUNCTION__ , accel_self_test[0] , accel_self_test[1], accel_self_test[2]);
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		mutex_unlock(&sdata->cdata->bank_registers_lock);
+	}
+	else
+	{
+		accel_self_test[0] = accel_self_test[1] = accel_self_test[2] = 0;
+		pr_info("[Sensor] %s: wrong enter, not to do accel self-test; Clear previous test result\n", __FUNCTION__);
+	}
+
+	pr_info("[Sensor] %s , exit\n", __FUNCTION__ );
 	return count;
+
+lsm6ds3_accel_self_test_exit:
+	w_buf = 0x00;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+	w_buf = 0x00;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+lsm6ds3_set_accel_self_test_mutex_unlock:
+	mutex_unlock(&sdata->cdata->bank_registers_lock);
+	pr_info("[Sensor] %s , exit - Fail , err=%d", __FUNCTION__ , err );
+	return err;
 }
 
 static ssize_t get_gyro_self_test(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%s\n", __func__);
+	pr_info("[Sensor] %s - %d , %d , %d\n",
+			__FUNCTION__ , gyro_self_test[0] , gyro_self_test[1], gyro_self_test[2]);
+
+	if (gyro_self_test[0]<GYRO_SELF_TEST_MIN_VAL || gyro_self_test[0] > GYRO_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "X=%d , out of range\nFail\n", gyro_self_test[0]);
+	}
+	if (gyro_self_test[1]<GYRO_SELF_TEST_MIN_VAL || gyro_self_test[1] > GYRO_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "Y=%d , out of range\nFail\n", gyro_self_test[1]);
+	}
+	if (gyro_self_test[2]<GYRO_SELF_TEST_MIN_VAL || gyro_self_test[2] > GYRO_SELF_TEST_MAX_VAL)
+	{
+		return sprintf(buf, "Z=%d , out of range\nFail\n", gyro_self_test[2]);
+	}
+	else
+	{
+		return sprintf(buf, "%d , %d , %d\nPass\n", gyro_self_test[0], gyro_self_test[1], gyro_self_test[2] );
+	}
 }
 
 static ssize_t set_gyro_self_test(struct device *dev, struct device_attribute *attr,
 						const char *buf, size_t count)
 {
+	struct lsm6ds3_sensor_data *sdata = dev_get_drvdata(dev);
+	u8 current_enabled, w_buf, r_buf, data[6] = {0};
+	int err, ret, i, xyz[3]={0}, sum[3]={0}, out_nost[3]={0}, out_st[3]={0};
+	unsigned long start;
+
+	pr_info("[Sensor] %s , enter\n", __FUNCTION__ );
+
+	err = strict_strtoul(buf, 10, &start);
+	if (err)
+	{
+		pr_info("[Sensor] %s: strict_strtoul failed, error=0x%x\n", __FUNCTION__, err );
+		return err;
+	}
+
+	if(start==1)
+	{
+		gyro_self_test[0] = gyro_self_test[1] = gyro_self_test[2] = 0;
+		current_enabled = sdata->enabled;
+		pr_info("[Sensor] %s: Start to do gyro self-test , current_enabled=%d\n", __FUNCTION__, current_enabled);
+		mutex_lock(&sdata->cdata->bank_registers_lock);
+
+		/* Initialize sensor, turn on sensor, enable P/R/Y */
+		/* Set BDU=1, ODR-208Hz, FS=2000dps */
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x5c;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x44;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL3_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL6_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL8_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL9_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		w_buf = 0x38;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL10_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		pr_info("[Sensor] %s , initialize done\n", __FUNCTION__);
+		/* wait 800ms for stable output */
+		msleep(800);
+		do {
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+			}
+			ret = (r_buf & LSM6DS3_STATUS_GDA_MASK)>>1;
+			pr_info("[Sensor] %s , GDA=%d\n", __FUNCTION__ , ret );
+			msleep(5);
+		} while (ret != 1);
+
+		/* Read first sample, then discard data */
+		err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_GYRO_OUT_X_L_ADDR,
+								LSM6DS3_OUT_XYZ_SIZE, data, false);
+		if (err < 0)
+		{
+			pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		}
+		msleep(5);	//ODR-208Hz =>  1/208=0.0048
+
+		/* Read the output registers after checking GDA bit *5 times */
+		for (i=0; i<SELF_TEST_READ_TIMES; i++)
+		{
+			do {
+				err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+				if (err < 0)
+				{
+					pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+					goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+				}
+				ret = (r_buf & LSM6DS3_STATUS_GDA_MASK)>>1;
+				pr_info("[Sensor] %s , i=%d , GDA=%d\n", __FUNCTION__ , i , ret );
+				msleep(5);
+			} while (ret != 1);
+
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_GYRO_OUT_X_L_ADDR,
+									LSM6DS3_OUT_XYZ_SIZE, data, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+			}
+			xyz[0] = (s32)((s16)(data[0] | (data[1] << 8)));
+			xyz[1] = (s32)((s16)(data[2] | (data[3] << 8)));
+			xyz[2] = (s32)((s16)(data[4] | (data[5] << 8)));
+			sum[0] += xyz[0];
+			sum[1] += xyz[1];
+			sum[2] += xyz[2];
+			pr_info("[Sensor] %s , (%d) %d , %d , %d\n", __FUNCTION__, i, xyz[0], xyz[1], xyz[2]);
+		}
+		out_nost[0] = sum[0] / SELF_TEST_READ_TIMES;
+		out_nost[1] = sum[1] / SELF_TEST_READ_TIMES;
+		out_nost[2] = sum[2] / SELF_TEST_READ_TIMES;
+		pr_info("[Sensor] %s , outX_nost=%d , outY_nost=%d , outZ_nost=%d\n",
+					__FUNCTION__, out_nost[0], out_nost[1], out_nost[2]);
+
+		/* Enable Gyro Self Test */
+		pr_info("[Sensor] %s , Enable Gyro self-test\n", __FUNCTION__);
+		w_buf = 0x04;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
+		/* wait for 60ms */
+		msleep(60);
+		do {
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_gyro_self_test_exit;
+			}
+			ret = (r_buf & LSM6DS3_STATUS_GDA_MASK)>>1;
+			pr_info("[Sensor] %s , GDA=%d\n", __FUNCTION__ , ret );
+			msleep(5);
+		} while (ret != 1);
+
+		/* Read first sample, then discard data */
+		err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_GYRO_OUT_X_L_ADDR,
+								LSM6DS3_OUT_XYZ_SIZE, data, false);
+		if (err < 0)
+		{
+			pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+			goto lsm6ds3_gyro_self_test_exit;
+		}
+		msleep(5);	//ODR-208Hz =>  1/208=0.0048
+
+		/* Read the output registers after checking GDA bit *5 times */
+		xyz[0] = xyz[1] = xyz[2] = 0;
+		sum[0] = sum[1] = sum[2] = 0;
+		for (i=0; i<SELF_TEST_READ_TIMES; i++)
+		{
+			do {
+				err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_STATUS_REG_ADDR, 1, &r_buf, false);
+				if (err < 0)
+				{
+					pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+					goto lsm6ds3_gyro_self_test_exit;
+				}
+				ret = (r_buf & LSM6DS3_STATUS_GDA_MASK)>>1;
+				pr_info("[Sensor] %s , i=%d , GDA=%d\n", __FUNCTION__ , i , ret );
+				msleep(5);
+			} while (ret != 1);
+
+			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_GYRO_OUT_X_L_ADDR,
+									LSM6DS3_OUT_XYZ_SIZE, data, false);
+			if (err < 0)
+			{
+				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
+				goto lsm6ds3_gyro_self_test_exit;
+			}
+			xyz[0] = (s32)((s16)(data[0] | (data[1] << 8)));
+			xyz[1] = (s32)((s16)(data[2] | (data[3] << 8)));
+			xyz[2] = (s32)((s16)(data[4] | (data[5] << 8)));
+			sum[0] += xyz[0];
+			sum[1] += xyz[1];
+			sum[2] += xyz[2];
+			pr_info("[Sensor] %s , (%d) %d , %d , %d\n", __FUNCTION__, i, xyz[0], xyz[1], xyz[2]);
+		}
+		out_st[0] = sum[0] / SELF_TEST_READ_TIMES;
+		out_st[1] = sum[1] / SELF_TEST_READ_TIMES;
+		out_st[2] = sum[2] / SELF_TEST_READ_TIMES;
+		pr_info("[Sensor] %s , outX_st=%d , outY_st=%d , outZ_st=%d\n",
+					__FUNCTION__, out_st[0], out_st[1], out_st[2]);
+
+		/* Store result */
+		gyro_self_test[0] = abs(out_st[0] - out_nost[0]);
+		gyro_self_test[1] = abs(out_st[1] - out_nost[1]);
+		gyro_self_test[2] = abs(out_st[2] - out_nost[2]);
+		pr_info("[Sensor] %s , gyro_self_test abs result -  %d , %d , %d\n",
+				__FUNCTION__ , gyro_self_test[0] , gyro_self_test[1], gyro_self_test[2]);
+
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		w_buf = 0x00;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		mutex_unlock(&sdata->cdata->bank_registers_lock);
+	}
+	else
+	{
+		gyro_self_test[0] = gyro_self_test[1] = gyro_self_test[2] = 0;
+		pr_info("[Sensor] %s: wrong enter, not to do gyro self-test; Clear previous test result\n", __FUNCTION__);
+	}
+
+	pr_info("[Sensor] %s , exit\n", __FUNCTION__ );
 	return count;
+
+lsm6ds3_gyro_self_test_exit:
+	w_buf = 0x00;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+	w_buf = 0x00;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+lsm6ds3_set_gyro_self_test_mutex_unlock:
+	mutex_unlock(&sdata->cdata->bank_registers_lock);
+	pr_info("[Sensor] %s , exit - Fail , err=%d", __FUNCTION__ , err );
+	return err;
 }
 #endif
 /* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
@@ -2369,6 +2938,8 @@ static DEVICE_ATTR(scale_avail, S_IRUGO, get_scale_avail, NULL);
 static DEVICE_ATTR(scale, S_IWUSR | S_IRUGO, get_cur_scale, set_cur_scale);
 /* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 static DEVICE_ATTR(ping, S_IWUSR | S_IRUGO, get_ping, NULL);
+/* Grace add for register dump */
+static DEVICE_ATTR(reg_dump, S_IWUSR | S_IRUGO, get_reg_dump, NULL);
 #ifdef CEI_FTM_CALI
 static DEVICE_ATTR(accel_cali, S_IWUSR | S_IRUGO, get_accel_cali, set_accel_cali);
 static DEVICE_ATTR(gyro_cali, S_IWUSR | S_IRUGO, get_gyro_cali, set_gyro_cali);
@@ -2394,6 +2965,7 @@ static struct attribute *lsm6ds3_accel_attribute[] = {
 	&dev_attr_scale.attr,
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	&dev_attr_ping.attr,
+	&dev_attr_reg_dump.attr,
 #ifdef CEI_FTM_CALI
 	&dev_attr_accel_cali.attr,
 #endif
@@ -2419,6 +2991,7 @@ static struct attribute *lsm6ds3_gyro_attribute[] = {
 	&dev_attr_scale.attr,
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	&dev_attr_ping.attr,
+	&dev_attr_reg_dump.attr,
 #ifdef CEI_FTM_CALI
 	&dev_attr_gyro_cali.attr,
 #endif
