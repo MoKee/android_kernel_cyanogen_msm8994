@@ -13,6 +13,7 @@
 #include "../msm8994-pinctrl.dtsi"
 #include "msm8994-camera-sensor-pm9x.dtsi"
 #include "synaptics-dsx-i2c.dtsi"
+#include "atmel-mxt336t-i2c.dtsi"
 
 / {
 	bt_qca6174 {
@@ -108,6 +109,12 @@
 	regulator-min-microvolt = <1200000>;
 	regulator-max-microvolt = <1200000>;
 	qcom,init-voltage = <1200000>;
+};
+
+&pm8994_l22 {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	qcom,init-voltage = <3300000>;
 };
 
 &ufsphy1 {

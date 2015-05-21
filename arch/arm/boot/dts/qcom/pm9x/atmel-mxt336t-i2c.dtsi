@@ -1,0 +1,33 @@
+&soc {
+	i2c@f9924000 {
+		status = "ok";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		atmel@4a {
+			compatible = "atmel,maxtouch";
+			reg = <0x4a>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <76 0x2002>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&atmel_default>;
+			vdd-supply = <&pm8994_l22>;
+			avdd-supply = <&pm8994_l14>;
+			atmel,reset-gpio = <&msm_gpio 96 0x0>;
+			atmel,irq-gpio = <&msm_gpio 76 0x2002>;
+			atmel,cfg_name = "atmel_cfg.raw";
+		};
+	};
+};
+
+&tlmm_pinmux {
+	atmel_int_pin {
+		qcom,pins = <&gp 76>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <1>;
+		label = "atmel-irq";
+		atmel_default: atmel_default {
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+};
