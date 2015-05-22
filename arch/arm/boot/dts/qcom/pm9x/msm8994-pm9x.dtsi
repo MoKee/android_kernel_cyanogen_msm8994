@@ -1130,6 +1130,7 @@
 &pmi8994_fg {
 	qcom,battery-data = <&mtp_batterydata>;
 	qcom,ext-sense-type;
+	qcom,fg-cutoff-voltage-mv = <3400>;
 };
 
 &pmi8994_haptics {
