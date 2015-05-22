@@ -60,8 +60,9 @@
 #define YAS_ACC_DRIVER_LSM6DS3			(24) /*!< LSM6DS3 */
 #define YAS_ACC_DRIVER_MMA8452Q			(25) /*!< MMA8452Q */
 #define YAS_ACC_DRIVER_MMA8453Q			(26) /*!< MMA8453Q */
-#define YAS_ACC_DRIVER_U2DH			(27) /*!< U2DH */
-#define YAS_ACC_DRIVER_YAS535			(28) /*!< YAS 535 (MS-6C) */
+#define YAS_ACC_DRIVER_STK8313			(27) /*!< STK8313 */
+#define YAS_ACC_DRIVER_U2DH			(28) /*!< U2DH */
+#define YAS_ACC_DRIVER_YAS535			(29) /*!< YAS 535 (MS-6C) */
 #define YAS_ACC_DRIVER_YAS53x			(0x7fff) /*!< YAS XXX */
 
 #define YAS_GYRO_DRIVER_NONE			(0) /*!< No Gyroscope */
@@ -130,25 +131,23 @@
 /*! Magnetic filter enable (0:Disable, 1: Enable) */
 #define YAS_MAG_FILTER_ENABLE			(1)
 /*! Fusion with gyroscope enable (0:Disable, 1: Enable) */
-#define YAS_FUSION_ENABLE			(1)
-/*! Fusion with gyroscope enable (0:Disable, 1: Enable) */
-#define YAS_FUSION_WITH_GYRO_ENABLE		(1)
+#define YAS_AMG_FUSION_ENABLE			(1)
 /*! Quaternion (gyroscope) enable (0:Disable, 1: Enable) */
-#define YAS_GAMEVEC_ENABLE			(1)
-/*! Magnetic average filter enable (0:Disable, 1:Enable) */
-#define YAS_MAG_AVERAGE_FILTER_ENABLE		(0)
+#define YAS_AG_FUSION_ENABLE			(1)
 /*! step counter enable (0:Disable, 1:Enable) */
-#define YAS_STEPCOUNTER_ENABLE			(1)
+#define YAS_STEPCOUNTER_ENABLE			(0)
 /*! Significant motion enable (0:Disable, 1:Enable) */
-#define YAS_SIGNIFICANT_MOTION_ENABLE		(1)
-/*! Software gyroscope enable (0:Disable, 1:Enable) */
-#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(1)
-/* Acc and Mag 6 Axis attitude filter enable (0: Disable, 1: Enable) */
-#define YAS_ATTITUDE_FILTER_ENABLE		(1)
+#define YAS_SIGNIFICANT_MOTION_ENABLE		(0)
+/*! acc&mag-6-axis fusion enable (0:Disable, 1:Enable) */
+#define YAS_AM_FUSION_ENABLE			(1)
 /*! Log enable (0:Disable, 1:Enable) */
 #define YAS_LOG_ENABLE				(0)
 /*! Orientation enable (0:Disable, 1:Enable) */
 #define YAS_ORIENTATION_ENABLE			(1)
+#define YAS_AM_FUSION_USE_OLD_VERSION  		(0)
+#define YAS_FUSION_ENABLE (YAS_AM_FUSION_ENABLE | \
+			   YAS_AG_FUSION_ENABLE | \
+			   YAS_AMG_FUSION_ENABLE)
 
 /*! Mangetic vdd in mV */
 #define YAS_MAG_VCORE				(1800)
@@ -188,23 +187,19 @@
 #undef YAS_MAG_FILTER_ENABLE
 #define YAS_MAG_FILTER_ENABLE			(0)
 #endif
-#if YAS_MAG_DRIVER != YAS_MAG_DRIVER_YAS536
-#undef YAS_MAG_AVERAGE_FILTER_ENABLE
-#define YAS_MAG_AVERAGE_FILTER_ENABLE		(0)
-#endif
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE \
 		    || YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
-#undef YAS_SOFTWARE_GYROSCOPE_ENABLE
-#define YAS_SOFTWARE_GYROSCOPE_ENABLE		(0)
+#undef YAS_AM_FUSION_ENABLE
+#define YAS_AM_FUSION_ENABLE		(0)
 #undef YAS_FUSION_ENABLE
 #define YAS_FUSION_ENABLE			(0)
 #endif
 
 #if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE \
 		    || YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
-#undef YAS_GAMEVEC_ENABLE
-#define YAS_GAMEVEC_ENABLE			(0)
+#undef YAS_AG_FUSION_ENABLE
+#define YAS_AG_FUSION_ENABLE			(0)
 #endif
 
 #if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE \
@@ -214,13 +209,13 @@
 #endif
 
 #if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
-#undef YAS_FUSION_WITH_GYRO_ENABLE
-#define YAS_FUSION_WITH_GYRO_ENABLE		(0)
+#undef YAS_AMG_FUSION_ENABLE
+#define YAS_AMG_FUSION_ENABLE		(0)
 #endif
 
 #if !YAS_FUSION_ENABLE
-#undef YAS_FUSION_WITH_GYRO_ENABLE
-#define YAS_FUSION_WITH_GYRO_ENABLE		(0)
+#undef YAS_AMG_FUSION_ENABLE
+#define YAS_AMG_FUSION_ENABLE		(0)
 #endif
 
 #if YAS_LOG_ENABLE

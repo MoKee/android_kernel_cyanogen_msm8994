@@ -905,4 +905,4 @@ module_exit(yas_driver_exit);
 
 MODULE_DESCRIPTION("Yamaha Magnetometer I2C driver");
 MODULE_LICENSE("GPL v2");
-MODULE_VERSION("0.9.0.1031");
+MODULE_VERSION("0.9.0.1100");

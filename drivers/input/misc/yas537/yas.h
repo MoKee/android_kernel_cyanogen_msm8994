@@ -25,7 +25,7 @@
 
 #include "yas_cfg.h"
 
-#define YAS_VERSION	"10.3.1"	/*!< MS-x Driver Version */
+#define YAS_VERSION	"11.0.0"	/*!< MS-x Driver Version */
 
 /* ----------------------------------------------------------------------------
  *                             Typedef definition
@@ -81,6 +81,8 @@
 #define M_PI		(3.14159265358979323846) /*!< Math PI */
 #endif
 
+#define HEADING_ERROR_UNSUPPORT         (-1) /* milli-degree */
+
 #define YAS_MATRIX_NORM		(10000) /*!< Matrix normalize unit */
 /* YAS_MATRIX_NORM_RECIP_BIT = SFIXED_RECIP_Q31(YAS_MATRIX_NORM,
  * &YAS_MATRIX_NORM_RECIP) */
@@ -119,137 +121,143 @@
 #define YLOGE(args)	/*!< Debug log (WARNING) */
 #endif /* DEBUG */
 
-#define YAS_TYPE_ACC_NONE		(0x00000001) /*!< No Acceleration */
-#define YAS_TYPE_MAG_NONE		(0x00000002) /*!< No Magnetometer */
-#define YAS_TYPE_GYRO_NONE		(0x00000004) /*!< No Gyroscope */
-#define YAS_TYPE_A_ACC			(0x00000008) /*!< 3-axis Acceleration */
-#define YAS_TYPE_M_MAG			(0x00000010) /*!< 3-axis Magnetometer */
-#define YAS_TYPE_G_GYRO			(0x00000020) /*!< 3-axis Gyroscope */
-#define YAS_TYPE_AM_ACC			(0x00100000) /*!< 6-axis (Acc+Mag)
+#define YAS_TYPE_ACC			(0x00000001)
+#define YAS_TYPE_MAG			(0x00000002)
+#define YAS_TYPE_GYRO			(0x00000004)
+
+#define YAS_COMBO_ACC_NONE		(0x00000010) /*!< No Acceleration */
+#define YAS_COMBO_MAG_NONE		(0x00000020) /*!< No Magnetometer */
+#define YAS_COMBO_GYRO_NONE		(0x00000040) /*!< No Gyroscope */
+#define YAS_COMBO_A_ACC			(0x00000100) /*!< 3-axis Acceleration */
+#define YAS_COMBO_M_MAG			(0x00000200) /*!< 3-axis Magnetometer */
+#define YAS_COMBO_G_GYRO		(0x00000400) /*!< 3-axis Gyroscope */
+#define YAS_COMBO_AM_ACC		(0x00100000) /*!< 6-axis (Acc+Mag)
 						       Acceleration */
-#define YAS_TYPE_AM_MAG			(0x00200000) /*!< 6-axis (Acc+Mag)
+#define YAS_COMBO_AM_MAG		(0x00200000) /*!< 6-axis (Acc+Mag)
 						       Magnetometer */
-#define YAS_TYPE_AG_ACC			(0x01000000) /*!< 6-axis (Acc+Gyro)
+#define YAS_COMBO_AG_ACC		(0x01000000) /*!< 6-axis (Acc+Gyro)
 						       Acceleration */
-#define YAS_TYPE_AG_GYRO		(0x02000000) /*!< 6-axis (Acc+Gyro)
+#define YAS_COMBO_AG_GYRO		(0x02000000) /*!< 6-axis (Acc+Gyro)
 						       Gyroscope */
-#define YAS_TYPE_AMG_ACC		(0x10000000) /*!< 9-axis (Acc+Gyro+Mag)
+#define YAS_COMBO_AMG_ACC		(0x10000000) /*!< 9-axis (Acc+Gyro+Mag)
 						       Acceleration */
-#define YAS_TYPE_AMG_MAG		(0x20000000) /*!< 9-axis (Acc+Gyro+Mag)
+#define YAS_COMBO_AMG_MAG		(0x20000000) /*!< 9-axis (Acc+Gyro+Mag)
 						       Magnetometer */
-#define YAS_TYPE_AMG_GYRO		(0x40000000) /*!< 9-axis (Acc+Gyro+Mag)
+#define YAS_COMBO_AMG_GYRO		(0x40000000) /*!< 9-axis (Acc+Gyro+Mag)
 						       Gyroscope */
 
 #if YAS_ACC_DRIVER == YAS_ACC_DRIVER_NONE
-#define YAS_TYPE_ACC YAS_TYPE_ACC_NONE
+#define YAS_COMBO_ACC YAS_COMBO_ACC_NONE
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_ADXL345
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_ADXL346
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA150
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA222
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA222E
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA250
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA250E
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA254
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMA255
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMI055
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_BMI058
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_DMARD08
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXSD9
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTE9
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTF9
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTI9
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXTJ2
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_KXUD9
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DL
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DLH
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS331DLM
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LIS3DH
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LSM330DLC
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_LSM6DS3
-#define YAS_TYPE_ACC YAS_TYPE_AG_ACC
+#define YAS_COMBO_ACC YAS_COMBO_AG_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_MMA8452Q
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_MMA8453Q
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
+#elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_STK8313
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_U2DH
-#define YAS_TYPE_ACC YAS_TYPE_A_ACC
+#define YAS_COMBO_ACC YAS_COMBO_A_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_YAS535
-#define YAS_TYPE_ACC YAS_TYPE_AM_ACC
+#define YAS_COMBO_ACC YAS_COMBO_AM_ACC
 #elif YAS_ACC_DRIVER == YAS_ACC_DRIVER_YAS53x
-#define YAS_TYPE_ACC YAS_TYPE_AMG_ACC
+#define YAS_COMBO_ACC YAS_COMBO_AMG_ACC
 #endif
 
 #if YAS_MAG_DRIVER == YAS_MAG_DRIVER_NONE
-#define YAS_TYPE_MAG YAS_TYPE_MAG_NONE
+#define YAS_COMBO_MAG YAS_COMBO_MAG_NONE
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS529 /* MS-3C */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS530 /* MS-3E */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS532 /* MS-3R */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS533 /* MS-3F */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS535 /* MS-6C */
-#define YAS_TYPE_MAG YAS_TYPE_AM_MAG
+#define YAS_COMBO_MAG YAS_COMBO_AM_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS536 /* MS-3W */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS537 /* MS-3T */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS539 /* MS-3S */
-#define YAS_TYPE_MAG YAS_TYPE_M_MAG
+#define YAS_COMBO_MAG YAS_COMBO_M_MAG
 #elif YAS_MAG_DRIVER == YAS_MAG_DRIVER_YAS53x
-#define YAS_TYPE_MAG YAS_TYPE_AMG_MAG
+#define YAS_COMBO_MAG YAS_COMBO_AMG_MAG
 #endif
 
 #if YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_NONE
-#define YAS_TYPE_GYRO YAS_TYPE_GYRO_NONE
+#define YAS_COMBO_GYRO YAS_COMBO_GYRO_NONE
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMG160
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMI055
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_BMI058
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_EWTZMU
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_ITG3200
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_ITG3500
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_L3G3200D
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_L3G4200D
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_LSM330DLC
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_LSM6DS3
-#define YAS_TYPE_GYRO YAS_TYPE_AG_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_AG_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_MPU3050
-#define YAS_TYPE_GYRO YAS_TYPE_G_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_G_GYRO
 #elif YAS_GYRO_DRIVER == YAS_GYRO_DRIVER_YAS53x
-#define YAS_TYPE_GYRO YAS_TYPE_AMG_GYRO
+#define YAS_COMBO_GYRO YAS_COMBO_AMG_GYRO
 #endif
 
 /* ----------------------------------------------------------------------------
@@ -1247,169 +1255,182 @@ struct yas_gyro_calib {
 };
 #endif
 
-#if YAS_MAG_AVERAGE_FILTER_ENABLE
-/**
- * @struct yas_mag_avg_config
- * @brief Magnetic average filter configuration
- */
-struct yas_mag_avg_config {
-	int tap_min; /*!< Minimum average filter length (0:32, 1:64, 2:128,
-			  3:256) */
-	int tap_hard; /*!< Average filter length currently set to the sensor
-			(0:32, 1:64, 2:128, 3:256) */
-	int filter_len; /*!< Average filter length */
-	uint32_t dfine; /*!< Measured standard deviation threshold [nT] */
-	uint32_t dthresh; /*!< Median standard deviation threshold [nT] */
-};
-
-/**
- * @struct yas_mag_avg_result
- * @brief Magnetic average filter result
- */
-struct yas_mag_avg_result {
-	int32_t tap_new; /*!< New average filter taps
-			    (0:32, 1:64, 2:128, 3:256) */
-	int32_t dm;	/*!< Median standard deviation */
-};
-
-/**
- * @struct yas_mag_avg
- * @brief Magnetic average filter
- */
-struct yas_mag_avg {
-	/**
-	 * Initializes the magnetic average filter
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*init)(void);
-	/**
-	 * Terminates the magnetic average filter
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*term)(void);
-	/**
-	 * Resets the magnetic average filter
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*reset)(void);
-	/**
-	 * Updates the filter
-	 * @param[in] raw Measured sensor data
-	 * @param[in] num The number of the measured sensor data
-	 * @param[out] r Average filter result
-	 * @retval 0 Average filter taps is NOT changed
-	 * @retval 1 Average filter taps is changed
-	 * @retval Negative Failure
-	 */
-	int (*update)(struct yas_data *raw, int num);
-	/**
-	 * Obtains the average filter tap
-	 * @param[out] curtap Current average filter tap (0:32, 1:64, 2:128,
-	 * 3:256)
-	 * @param[out] newtap Average filter tap to be set (0:32, 1:64, 2:128,
-	 * 3:256)
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_tap)(int *curtap, int *newtap);
-	/**
-	 * Sets the average filter tap
-	 * @param[in] tap The average filter tap (0:32, 1:64, 2:128, 3:256)
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*set_tap)(int tap);
-	/**
-	 * Obtains the average filter configuration
-	 * @param[out] config Average filter configuration
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_config)(struct yas_mag_avg_config *config);
-	/**
-	 * Sets the average filter configuration
-	 * @param[in] config Average filter configuration
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*set_config)(struct yas_mag_avg_config *config);
-	/**
-	 * Obtains the detail of filter result
-	 * @param[out] r Filter result
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_result)(struct yas_mag_avg_result *r);
+#if YAS_AM_FUSION_ENABLE
+struct yas_am_fusion_config {
+	int8_t dummy;
 };
 #endif
-
-#if YAS_GAMEVEC_ENABLE
-/**
- * @struct yas_gamevec_config
- * @brief Gamevec config
- */
-struct yas_gamevec_config {
+#if YAS_AG_FUSION_ENABLE
+struct yas_ag_fusion_config {
 	int32_t weight;
 	int32_t hpf_sq_out_threshold;
 	int16_t sustain;
 };
 #endif
-
-#if YAS_FUSION_ENABLE
-/**
- * @struct yas_fusion_config
- * @brief Sensor fusion configuration
- */
-struct yas_fusion_config {
-	uint8_t mag_fusion_enable; /*!< 6 axis fusion enable or disable */
-	uint8_t gyro_fusion_enable; /*!< 9 axis fusion enable or disable */
-#if YAS_GAMEVEC_ENABLE
-	struct yas_gamevec_config gamevec_config;
-#endif
+#if YAS_AMG_FUSION_ENABLE
+struct yas_amg_fusion_config {
+	int8_t dummy;
 };
-
-/**
- * @struct yas_fusion_result
- * @brief Sensor fusion result
- */
-struct yas_fusion_result {
-#if YAS_ORIENTATION_ENABLE
-	struct yas_vector orientation_mag; /*!< orientation angle (acc and mag)
-					  [mdegree].  Azimuth, Pitch, Roll */
 #endif
-	struct yas_quaternion quaternion_mag; /*!< quaternion (acc and mag)
-						[normalized in
-						YAS_QUATERNION_NORM] */
-#if YAS_GAMEVEC_ENABLE
-	struct yas_quaternion quaternion_gyro; /*!< quaternion (gyro)
+
+#if YAS_AM_FUSION_ENABLE
+struct yas_am_fusion_result {
+# if YAS_AM_FUSION_USE_OLD_VERSION
+#  if YAS_ORIENTATION_ENABLE
+	struct yas_vector orientation; /*!< orientation angle (acc and mag)
+				 [mdegree].  Azimuth, Pitch, Roll */
+#  endif
+        struct yas_quaternion quaternion; /*!< quaternion (acc and mag)
+					    [normalized in
+					    YAS_QUATERNION_NORM] */
+# else /* new version. */
+#  if YAS_ORIENTATION_ENABLE
+	struct yas_vector orientation;
+#  endif
+	struct yas_quaternion quaternion;
+	struct yas_vector gravity;
+	struct yas_vector linear_acceleration;
+	struct yas_vector angular_velocity;
+# endif
+};
+#endif
+
+#if YAS_AG_FUSION_ENABLE
+struct yas_ag_fusion_result {
+	struct yas_quaternion quaternion; /*!< quaternion (GAMEVEC)
 						 [normalized in
 						 YAS_QUATERNION_NORM] */
+};
 #endif
-#if YAS_FUSION_WITH_GYRO_ENABLE
-#if YAS_ORIENTATION_ENABLE
-	struct yas_vector orientation_fusion; /*!< orientation angle (acc, mag
-						and gyro) [mdegree].  Azimuth,
-						Pitch, Roll */
-#endif
-	struct yas_quaternion quaternion_fusion; /*!< quaternion (acc, mag and
-						   gyro) [normalized in
-						   YAS_QUATERNION_NORM] */
+
+#if YAS_AMG_FUSION_ENABLE
+struct yas_amg_fusion_result {
+	struct yas_vector orientation; /*!< orientation angle (acc, mag
+					 and gyro) [mdegree].  Azimuth,
+					 Pitch, Roll */        
+	struct yas_quaternion quaternion; /*!< quaternion (acc, mag and
+					    gyro) [normalized in
+					    YAS_QUATERNION_NORM] */
 	struct yas_vector gravity; /*!< Gravity [um/s^2] */
 	struct yas_vector linear_acceleration; /*!< Linear acceleration
-						 [um/s^2] */
-#endif
+                                                 [um/s^2] */
 };
+#endif
 
+#if YAS_AM_FUSION_ENABLE
+struct yas_am_fusion {
+	/**
+	 * Initializes the sensor acc-mag-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*init)(void);
+	/**
+	 * Terminates the sensor acc-mag-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*term)(void);
+	/**
+	 * Resets the sensor acc-mag-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*reset)(void);
+
+	/**
+	 * Updates the sensor fusion
+	 * @param[in] raw Measured sensor data
+	 * @param[in] num The number of the measured sensor data
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*update)(struct yas_data *raw, int num);
+	/**
+	 * Obtains the sensor fusion configuration
+	 * @param[out] config Sensor fusion configuration
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_config)(struct yas_am_fusion_config *config);
+	/**
+	 * Sets the sensor fusion configuration
+	 * @param[in] config Sensor fusion configuration
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*set_config)(const struct yas_am_fusion_config *config);
+	/**
+	 * Obtains the detail of the last fusion result
+	 * @param[out] r Last fusion result
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_result)(struct yas_am_fusion_result *r);  
+};
+#endif
+
+#if YAS_AG_FUSION_ENABLE
+struct yas_ag_fusion {
+	/**
+	 * Initializes the sensor acc-gyro-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*init)(void);
+	/**
+	 * Terminates the sensor acc-gyro-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*term)(void);
+	/**
+	 * Resets the sensor acc-gyro-fusion
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*reset)(void);
+
+	/**
+	 * Updates the sensor fusion
+	 * @param[in] raw Measured sensor data
+	 * @param[in] num The number of the measured sensor data
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*update)(struct yas_data *raw, int num);
+	/**
+	 * Obtains the sensor fusion configuration
+	 * @param[out] config Sensor fusion configuration
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_config)(struct yas_ag_fusion_config *config);
+	/**
+	 * Sets the sensor fusion configuration
+	 * @param[in] config Sensor fusion configuration
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*set_config)(const struct yas_ag_fusion_config *config);
+	/**
+	 * Obtains the detail of the last fusion result
+	 * @param[out] r Last fusion result
+	 * @retval #YAS_NO_ERROR Success
+	 * @retval Negative Failure
+	 */
+	int (*get_result)(struct yas_ag_fusion_result *r);
+};
+#endif
+
+#if YAS_AMG_FUSION_ENABLE
 /**
  * @struct yas_fusion
  * @brief Sensor fusion
  */
-struct yas_fusion {
+struct yas_amg_fusion {
 	/**
-	 * Initializes the sensor fusion
+	 * Initializes the 9-axis-sensor fusion
 	 * @retval #YAS_NO_ERROR Success
 	 * @retval Negative Failure
 	 */
@@ -1447,21 +1468,21 @@ struct yas_fusion {
 	 * @retval #YAS_NO_ERROR Success
 	 * @retval Negative Failure
 	 */
-	int (*get_config)(struct yas_fusion_config *config);
+	int (*get_config)(struct yas_amg_fusion_config *config);
 	/**
 	 * Sets the sensor fusion configuration
 	 * @param[in] config Sensor fusion configuration
 	 * @retval #YAS_NO_ERROR Success
 	 * @retval Negative Failure
 	 */
-	int (*set_config)(struct yas_fusion_config *config);
+	int (*set_config)(const struct yas_amg_fusion_config *config);
 	/**
 	 * Obtains the detail of the last fusion result
 	 * @param[out] r Last fusion result
 	 * @retval #YAS_NO_ERROR Success
 	 * @retval Negative Failure
 	 */
-	int (*get_result)(struct yas_fusion_result *r);
+	int (*get_result)(struct yas_amg_fusion_result *r);
 };
 #endif
 
@@ -1619,150 +1640,6 @@ struct yas_sfm {
 	 * @retval Negative Failure
 	 */
 	int (*get_result)(struct yas_sfm_result *r);
-};
-#endif
-
-#if YAS_SOFTWARE_GYROSCOPE_ENABLE
-/**
- * @struct yas_swgyro_config
- * @brief Software gyroscope configuration
- */
-struct yas_swgyro_config {
-	int dummy; /*!< dummy */
-};
-
-/**
- * @struct yas_swgyro_result
- * @brief Software gyroscope result
- */
-struct yas_swgyro_result {
-	struct yas_vector swgyro; /*!< Software gyroscope value in mdps */
-};
-
-/**
- * @struct yas_swgyro
- * @brief Software gyroscope
- */
-struct yas_swgyro {
-	/**
-	 * Initializes the software gyroscope
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*init)(void);
-	/**
-	 * Terminates the software gyroscope
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*term)(void);
-	/**
-	 * Resets the software gyroscope
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*reset)(void);
-	/**
-	 * Updates the software gyroscope
-	 * @param[in] calibrated Measured sensor data
-	 * @param[in] num The number of the measured sensor data
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*update)(struct yas_data *calibrated, int num);
-	/**
-	 * Obtains software gyroscope configuration
-	 * @param[out] config Software gyroscope configuration
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_config)(struct yas_swgyro_config *config);
-	/**
-	 * Sets software gyroscope configuration
-	 * @param[in] config Software gyroscope configuration
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*set_config)(struct yas_swgyro_config *config);
-	/**
-	 * Obtains the detail of the last software gyroscope result
-	 * @param[out] r Last software gyroscope result
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_result)(struct yas_swgyro_result *r);
-};
-#endif
-
-#if YAS_ATTITUDE_FILTER_ENABLE
-
-struct yas_attitude_filter_result {
-	struct yas_quaternion quaternion;
-	struct yas_vector gravity; /*!< Gravity [um/s^2] */
-	struct yas_vector linear_acceleration; /*!< Linear acceleration
-						 [um/s^2] */
-};
-
-/**
- * @struct yas_attitude_filter_config
- * @brief Attitude-filter config
- */
-struct yas_attitude_filter_config {
-	int32_t dt;
-	int32_t gamma;
-};
-
-/**
- * @struct yas_attitude_filter
- * @brief Attitude-filter.
- */
-struct yas_attitude_filter {
-	/**
-	 * Initializes the attitude_filter.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*init)(void);
-	/**
-	 * Terminates the attitude-filter.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*term)(void);
-	/**
-	 * Resets the attitude-filter.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*reset)(void);
-	/**
-	 * Updates the attitude-filter.
-	 * @param[in] data Magnetometer and Accelerometer data.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*update)(struct yas_data *data, int num);
-	/**
-	 * Gets a configuration parameter.
-	 * @param[out] c A pointer to the configuration parameter.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_config)(struct yas_attitude_filter_config *c);
-	/**
-	 * Sets a configuration parameter.
-	 * @param[in] c A pointer to the configuration parameter.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*set_config)(const struct yas_attitude_filter_config *c);
-	/**
-	 * Gets the last result of attitude-filter.
-	 * @param[out] r Result.
-	 * @retval #YAS_NO_ERROR Success
-	 * @retval Negative Failure
-	 */
-	int (*get_result)(struct yas_attitude_filter_result *r);
 };
 #endif
 
@@ -1940,24 +1817,14 @@ int yas_gyro_calib_init(struct yas_gyro_calib *f);
 int yas_mag_filter_init(struct yas_mag_filter *f);
 #endif
 
-#if YAS_MAG_AVERAGE_FILTER_ENABLE
-/**
- * Initializes the magnetic average filter module.
- * @param[in,out] f Pointer to yas_mag_avg struct
- * @retval #YAS_NO_ERROR Success
- * @retval Negative Number Error
- */
-int yas_mag_avg_init(struct yas_mag_avg *f);
+#if YAS_AM_FUSION_ENABLE
+int yas_am_fusion_init(struct yas_am_fusion *f);
 #endif
-
-#if YAS_FUSION_ENABLE
-/**
- * Initializes the sensor fusion module.
- * @param[in,out] f Pointer to yas_fusion struct
- * @retval #YAS_NO_ERROR Success
- * @retval Negative Number Error
- */
-int yas_fusion_init(struct yas_fusion *f);
+#if YAS_AG_FUSION_ENABLE
+int yas_ag_fusion_init(struct yas_ag_fusion *f);
+#endif
+#if YAS_AMG_FUSION_ENABLE
+int yas_amg_fusion_init(struct yas_amg_fusion *f);
 #endif
 
 #if YAS_STEPCOUNTER_ENABLE
@@ -1978,26 +1845,6 @@ int yas_stepcounter_init(struct yas_stepcounter *f);
  * @retval Negative Number Error
  */
 int yas_sfm_init(struct yas_sfm *f);
-#endif
-
-#if YAS_SOFTWARE_GYROSCOPE_ENABLE
-/**
- * Initializes the software gyroscope module
- * @param[in,out] f Pointer to yas_swgyro struct
- * @retval #YAS_NO_ERROR Success
- * @retval Negative Number Error
- */
-int yas_swgyro_init(struct yas_swgyro *f);
-#endif
-
-#if YAS_ATTITUDE_FILTER_ENABLE
-/**
- * Initializes the filtered-attutde module.
- * @param[in,out] f Pointer to yas_attitude_filter struct
- * @retval #YAS_NO_ERROR Success
- * @retval Negative Number Error
- */
-int yas_attitude_filter_init(struct yas_attitude_filter *f);
 #endif
 
 #ifdef __cplusplus
