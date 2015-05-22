@@ -709,7 +709,7 @@ static int32_t stk3x1x_software_reset(struct stk3x1x_data *ps_data)
 {
     int32_t r=0;
     uint8_t w_reg;
-	return 0;
+
    w_reg =0x01;// 0x7F;
     r = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,STK_WAIT_REG,w_reg);
     if (r<0)
