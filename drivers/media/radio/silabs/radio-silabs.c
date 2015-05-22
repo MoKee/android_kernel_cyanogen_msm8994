@@ -3170,14 +3170,6 @@ static int silabs_fm_vidioc_s_tuner(struct file *file, void *priv,
 	else
 		radio->recv_conf.band_high_limit = prop_val;
 
-	if (tuner->audmode == V4L2_TUNER_MODE_MONO) {
-		retval = set_property(radio, FM_BLEND_RSSI_STEREO_THRESHOLD_PROP, 0x007F);
-		retval = set_property(radio, FM_BLEND_RSSI_MONO_THRESHOLD_PROP, 0x007F);
-	} else {
-		retval = set_property(radio, FM_BLEND_RSSI_STEREO_THRESHOLD_PROP, 0x0031);
-		retval = set_property(radio, FM_BLEND_RSSI_MONO_THRESHOLD_PROP, 0x001E);
-	}
-
 	if (retval < 0)
 		FMDERR(": set tuner failed with %d\n", retval);
 
