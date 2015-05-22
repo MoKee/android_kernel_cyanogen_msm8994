@@ -115,10 +115,11 @@
 		compatible = "qcom,actuator";
 		qcom,cci-master = <0>;
 		cam_vaf-supply = <&pm8994_l19>;
-		qcom,cam-vreg-name = "cam_vaf";
-		qcom,cam-vreg-min-voltage = <2800000>;
-		qcom,cam-vreg-max-voltage = <2800000>;
-		qcom,cam-vreg-op-mode = <100000>;
+		cam_vois-supply = <&pm8994_l23>;
+		qcom,cam-vreg-name = "cam_vaf", "cam_vois";
+		qcom,cam-vreg-min-voltage = <2800000 2800000>;
+		qcom,cam-vreg-max-voltage = <2800000 2800000>;
+		qcom,cam-vreg-op-mode = <100000 100000>;
 	};
 
 	ois0: qcom,ois@0 {
@@ -126,11 +127,12 @@
 		reg = <0x0>;
 		compatible = "qcom,ois";
 		qcom,cci-master = <0>;
-		cam_vaf-supply = <&pm8994_l23>;
-		qcom,cam-vreg-name = "cam_vaf";
-		qcom,cam-vreg-min-voltage = <2800000>;
-		qcom,cam-vreg-max-voltage = <2800000>;
-		qcom,cam-vreg-op-mode = <100000>;
+		cam_vaf-supply = <&pm8994_l19>;
+		cam_vois-supply = <&pm8994_l23>;
+		qcom,cam-vreg-name = "cam_vaf", "cam_vois";
+		qcom,cam-vreg-min-voltage = <2800000 2800000>;
+		qcom,cam-vreg-max-voltage = <2800000 2800000>;
+		qcom,cam-vreg-op-mode = <100000 100000>;
 	};
 
 	eeprom1: qcom,eeprom@1 {
