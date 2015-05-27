@@ -264,6 +264,8 @@ static void led_ktd_brightness_set(struct led_classdev *led_cdev,
 	if (value > flash_led_cdev->cdev.max_brightness)
 		value = flash_led_cdev->cdev.max_brightness;
 
+	led_cdev->brightness = value;
+
 	if (value == LED_OFF)
 	{
 		//set led disable
