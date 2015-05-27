@@ -2611,14 +2611,30 @@ static ssize_t set_accel_self_test(struct device *dev, struct device_attribute *
 		pr_info("[Sensor] %s , accel_self_test abs result -  %d , %d , %d\n",
 				__FUNCTION__ , accel_self_test[0] , accel_self_test[1], accel_self_test[2]);
 
+		/* disable sensor */
 		w_buf = 0x00;
 		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
 		if (err < 0)
 			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		/* disable self-test */
 		w_buf = 0x00;
 		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
 		if (err < 0)
 			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		/* Restore the register to general status */
+		w_buf = 0x38;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL10_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		w_buf = 0x20;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+		w_buf = 0x4;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_accel_self_test_mutex_unlock;
+
 		mutex_unlock(&sdata->cdata->bank_registers_lock);
 	}
 	else
@@ -2631,12 +2647,27 @@ static ssize_t set_accel_self_test(struct device *dev, struct device_attribute *
 	return count;
 
 lsm6ds3_accel_self_test_exit:
+	/* disable sensor */
 	w_buf = 0x00;
 	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL1_XL_ADDR, 1, &w_buf, false);
 	if (err < 0)
 		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+	/* disable self-test */
 	w_buf = 0x00;
 	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+	/* Restore the register to general status */
+	w_buf = 0x38;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL10_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+	w_buf = 0x20;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_accel_self_test_mutex_unlock;
+	w_buf = 0x4;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
 	if (err < 0)
 		goto lsm6ds3_set_accel_self_test_mutex_unlock;
 lsm6ds3_set_accel_self_test_mutex_unlock:
@@ -2882,14 +2913,30 @@ static ssize_t set_gyro_self_test(struct device *dev, struct device_attribute *a
 		pr_info("[Sensor] %s , gyro_self_test abs result -  %d , %d , %d\n",
 				__FUNCTION__ , gyro_self_test[0] , gyro_self_test[1], gyro_self_test[2]);
 
+		/* disable sensor */
 		w_buf = 0x00;
 		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
 		if (err < 0)
 			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		/* disable self-test */
 		w_buf = 0x00;
 		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
 		if (err < 0)
 			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		/* Restore the register to general status */
+		w_buf = 0x38;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL9_XL_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		w_buf = 0x20;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+		w_buf = 0x4;
+		err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
+		if (err < 0)
+			goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+
 		mutex_unlock(&sdata->cdata->bank_registers_lock);
 	}
 	else
@@ -2902,12 +2949,27 @@ static ssize_t set_gyro_self_test(struct device *dev, struct device_attribute *a
 	return count;
 
 lsm6ds3_gyro_self_test_exit:
+	/* disable sensor */
 	w_buf = 0x00;
 	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL2_G_ADDR, 1, &w_buf, false);
 	if (err < 0)
 		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+	/* disable self-test */
 	w_buf = 0x00;
 	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL5_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+	/* Restore the register to general status */
+	w_buf = 0x38;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL9_XL_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+	w_buf = 0x20;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL4_C_ADDR, 1, &w_buf, false);
+	if (err < 0)
+		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
+	w_buf = 0x4;
+	err = sdata->cdata->tf->write(sdata->cdata, LSM6DS3_CTRL7_G_ADDR, 1, &w_buf, false);
 	if (err < 0)
 		goto lsm6ds3_set_gyro_self_test_mutex_unlock;
 lsm6ds3_set_gyro_self_test_mutex_unlock:
