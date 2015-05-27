@@ -1159,6 +1159,10 @@
 	qcom,battery-data = <&mtp_batterydata>;
 	qcom,ext-sense-type;
 	qcom,fg-cutoff-voltage-mv = <3400>;
+	qcom,warm-bat-decidegc = <450>;
+	qcom,cool-bat-decidegc = <200>;
+	qcom,hot-bat-decidegc = <570>;
+	qcom,cold-bat-decidegc = <0>;
 };
 
 &pmi8994_haptics {
@@ -1170,6 +1174,8 @@
 &pmi8994_charger {
 	qcom,fastchg-current-ma = <3000>;
 	qcom,float-voltage-mv = <4400>;
+	qcom,warm-fastchg-current-ma = <1400>;
+	qcom,cool-fastchg-current-ma = <560>;
 	qcom,dc-psy-type = "Wipower";
 	qcom,dcin-vadc = <&pmi8994_vadc>;
 	qcom,wipower-default-ilim-map = <4000000 20000000 550 700 300>;
