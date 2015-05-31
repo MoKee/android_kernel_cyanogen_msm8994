@@ -25,6 +25,9 @@
 #include <linux/regulator/consumer.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
+#ifdef CONFIG_MACH_PM9X
+#include <hwid/cei_hw_id.h>
+#endif
 
 #define	LID_DEV_NAME	"hall_sensor"
 #define HALL_INPUT	"/dev/input/hall_dev"
@@ -231,6 +234,12 @@ static int hall_driver_probe(struct platform_device *dev)
 	struct hall_data *data;
 	int err = 0;
 	int irq_flags;
+#ifdef CONFIG_MACH_PM9X
+	if (is_cei_evt1_board()) {
+		dev_err(&dev->dev, "EVT1 board, skip probe\n");
+		goto exit;
+	}
+#endif
 
 	dev_dbg(&dev->dev, "hall_driver probe\n");
 	data = devm_kzalloc(&dev->dev, sizeof(struct hall_data), GFP_KERNEL);
