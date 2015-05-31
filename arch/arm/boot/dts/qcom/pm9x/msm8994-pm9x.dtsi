@@ -1140,7 +1140,7 @@
 };
 
 &pmi8994_charger {
-	qcom,fastchg-current-ma = <2800>;
+	qcom,fastchg-current-ma = <3000>;
 	qcom,float-voltage-mv = <4400>;
 	qcom,dc-psy-type = "Wipower";
 	qcom,dcin-vadc = <&pmi8994_vadc>;
