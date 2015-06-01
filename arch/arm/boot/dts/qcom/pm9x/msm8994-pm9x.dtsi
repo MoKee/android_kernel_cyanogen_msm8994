@@ -1214,3 +1214,7 @@
 &qusb_phy {
 	status = "ok";
 };
+
+&pmi8994_wled {
+	qcom,led-strings-list = [00 01];
+};
