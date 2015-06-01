@@ -1885,6 +1885,18 @@ static int initialize_recv(struct silabs_fm_device *radio)
 		goto set_prop_fail;
 	}
 
+	set_property(radio, FM_BLEND_RSSI_STEREO_THRESHOLD_PROP, 0x0031);
+	set_property(radio, FM_BLEND_RSSI_MONO_THRESHOLD_PROP, 0x001E);
+
+	retval = set_property(radio,
+		FM_RDS_INT_SOURCE_PROP,
+		RDS_INT_BIT);
+	if (retval < 0) {
+		FMDERR("In %s, FM_RDS_INT_SOURCE_PROP failed %d\n",
+			__func__, retval);
+		goto set_prop_fail;
+	}
+
 	retval = set_property(radio,
 				FM_RDS_INT_FIFO_COUNT_PROP,
 				FIFO_CNT_16);
@@ -2948,6 +2960,14 @@ static int silabs_fm_vidioc_s_ctrl(struct file *file, void *priv,
 		return retval;
 		break;
 	case V4L2_CID_PRIVATE_SILABS_RDSON:
+		retval = set_property(radio,
+				FM_RDS_CONFIG_PROP,
+				UNCORRECTABLE_RDS_EN);
+		if (retval < 0) {
+			FMDERR("In %s, FM_RDS_CONFIG_PROP failed %d\n",
+				__func__, retval);
+			goto end;
+		}
 		return retval;
 		break;
 	case V4L2_CID_PRIVATE_SILABS_RDSGROUP_MASK:
