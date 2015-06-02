@@ -186,8 +186,8 @@ struct t9_range {
 #define MXT_FW_RESET_TIME	3000	/* msec */
 #define MXT_FW_CHG_TIMEOUT	300	/* msec */
 #define MXT_WAKEUP_TIME		25	/* msec */
-#define MXT_REGULATOR_DELAY	150	/* msec */
-#define MXT_CHG_DELAY	        100	/* msec */
+#define MXT_REGULATOR_DELAY	5	/* msec */
+#define MXT_CHG_DELAY		50	/* msec */
 #define MXT_POWERON_DELAY	150	/* msec */
 
 /* Command to unlock bootloader */
@@ -274,6 +274,9 @@ struct mxt_object {
 struct mxt_data {
 	struct i2c_client *client;
 	struct input_dev *input_dev;
+	struct pinctrl *ts_pinctrl;
+	struct pinctrl_state *gpio_state_active;
+	struct pinctrl_state *gpio_state_suspend;
 	char phys[64];		/* device physical location */
 	const struct mxt_platform_data *pdata;
 	struct mxt_object *object_table;
@@ -308,6 +311,7 @@ struct mxt_data {
 	unsigned long t15_keystatus;
 	bool use_retrigen_workaround;
 	bool use_regulator;
+	bool power_on;
 	struct regulator *reg_vdd;
 	struct regulator *reg_avdd;
 	char *fw_name;
@@ -1043,6 +1047,7 @@ static void mxt_proc_t100_message(struct mxt_data *data, u8 *message)
 	} else {
 		/* Touch no longer active, close out slot */
 		input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, 0);
+		TP_LOGI("[%u] touch released x:%u y:%u\n", id, x, y);
 	}
 
 	data->update_input = true;
@@ -1357,6 +1362,9 @@ update_count:
 static irqreturn_t mxt_interrupt(int irq, void *dev_id)
 {
 	struct mxt_data *data = dev_id;
+
+	if (!data->power_on)
+		return IRQ_HANDLED;
 
 	if (data->in_bootloader) {
 		/* bootloader state transition completion */
@@ -2066,6 +2074,134 @@ err_free_mem:
 	return error;
 }
 
+static int mxt_pinctrl_init(struct mxt_data *data)
+{
+	int error;
+
+	TP_LOGI("start\n");
+
+	/* Get pinctrl if target uses pinctrl */
+	data->ts_pinctrl = devm_pinctrl_get((&data->client->dev));
+	if (IS_ERR_OR_NULL(data->ts_pinctrl)) {
+		TP_LOGI("Device does not use pinctrl\n");
+		error = PTR_ERR(data->ts_pinctrl);
+		data->ts_pinctrl = NULL;
+		return error;
+	}
+
+	data->gpio_state_active =
+			pinctrl_lookup_state(data->ts_pinctrl, "pmx_ts_active");
+	if (IS_ERR_OR_NULL(data->gpio_state_active)) {
+		TP_LOGD("Can not get ts default pinstate\n");
+		error = PTR_ERR(data->gpio_state_active);
+		data->ts_pinctrl = NULL;
+		return error;
+	}
+
+	data->gpio_state_suspend =
+			pinctrl_lookup_state(data->ts_pinctrl, "pmx_ts_suspend");
+	if (IS_ERR_OR_NULL(data->gpio_state_suspend)) {
+		TP_LOGD("Can not get ts sleep pinstate\n");
+		error = PTR_ERR(data->gpio_state_suspend);
+		data->ts_pinctrl = NULL;
+		return error;
+	}
+
+	return 0;
+}
+
+static int mxt_pinctrl_select(struct mxt_data *data, bool on)
+{
+	struct pinctrl_state *pins_state;
+	int error;
+
+	TP_LOGD("on (%s)\n", on ? "true" : "false");
+
+	pins_state = on ? data->gpio_state_active
+			: data->gpio_state_suspend;
+	if (!IS_ERR_OR_NULL(pins_state)) {
+		error = pinctrl_select_state(data->ts_pinctrl, pins_state);
+		if (error) {
+			TP_LOGE("can not set %s pins\n",
+					on ? "pmx_ts_active" : "pmx_ts_suspend");
+			return error;
+		}
+	} else {
+		TP_LOGE("not a valid '%s' pinstate\n",
+				on ? "pmx_ts_active" : "pmx_ts_suspend");
+	}
+
+	return 0;
+}
+
+static int mxt_gpio_enable(struct mxt_data *data, bool enable)
+{
+	const struct mxt_platform_data *pdata = data->pdata;
+	int error;
+
+
+	TP_LOGI("enable (%s)\n", enable ? "true" : "false");
+
+	if (enable) {
+		if (gpio_is_valid(pdata->gpio_irq)) {
+			error = gpio_request(pdata->gpio_irq,
+					"maxtouch_gpio_irq");
+			if (error) {
+				TP_LOGE("unable to request %lu gpio(%d)\n",
+						pdata->gpio_irq, error);
+				return error;
+			}
+			error = gpio_direction_input(pdata->gpio_irq);
+			if (error) {
+				TP_LOGE("unable to set dir for %lu gpio(%d)\n",
+						data->pdata->gpio_irq, error);
+				goto err_free_irq;
+			}
+
+		} else {
+			TP_LOGE("irq gpio not provided\n");
+			return -EINVAL;
+		}
+
+		if (gpio_is_valid(pdata->gpio_reset)) {
+			error = gpio_request(pdata->gpio_reset,
+					"maxtouch_gpio_reset");
+			if (error) {
+				TP_LOGE("unable to request %lu gpio(%d)\n",
+						pdata->gpio_reset, error);
+				goto err_free_irq;
+			}
+			error = gpio_direction_output(pdata->gpio_reset, 0);
+			if (error) {
+				TP_LOGE("unable to set dir for %lu gpio(%d)\n",
+						pdata->gpio_reset, error);
+				goto err_free_reset;
+			}
+		} else {
+			TP_LOGE("reset gpio not provided\n");
+			goto err_free_irq;
+		}
+	} else {
+		if (gpio_is_valid(pdata->gpio_irq))
+			gpio_free(pdata->gpio_irq);
+
+		if (gpio_is_valid(pdata->gpio_reset)) {
+			gpio_free(pdata->gpio_reset);
+		}
+	}
+
+	return 0;
+
+err_free_reset:
+	if (gpio_is_valid(pdata->gpio_reset)) {
+		gpio_free(pdata->gpio_reset);
+	}
+err_free_irq:
+	if (gpio_is_valid(pdata->gpio_irq))
+		gpio_free(pdata->gpio_irq);
+	return error;
+}
+
 /**
  * Enable regulator and wait the first interrupt
  */
@@ -2087,9 +2223,13 @@ static void mxt_regulator_enable(struct mxt_data *data)
 		return;
 	}
 
+	TP_LOGD("Regulators turn on\n");
+
 	msleep(MXT_REGULATOR_DELAY);
 	gpio_set_value(data->pdata->gpio_reset, 1);
 	msleep(MXT_CHG_DELAY);
+
+	data->power_on = true;
 
 	/* after power on, wait the first interrupt forever */
 retry_wait:
@@ -2108,8 +2248,10 @@ retry_wait:
  */
 static void mxt_regulator_disable(struct mxt_data *data)
 {
+	data->power_on = false;
 	regulator_disable(data->reg_vdd);
 	regulator_disable(data->reg_avdd);
+	gpio_set_value(data->pdata->gpio_reset, 0);
 }
 
 static void mxt_probe_regulators(struct mxt_data *data)
@@ -2141,13 +2283,7 @@ static void mxt_probe_regulators(struct mxt_data *data)
 		goto fail_release;
 	}
 
-	//data->use_regulator = true;
-	/*
-	 * FIXME: there have some problems if disable regulator
-	 * at suspend. Use i2c command to let IC into sleep
-	 * mode.
-	 */
-	data->use_regulator = false;
+	data->use_regulator = true;
 
 	/* enable regulators */
 	mxt_regulator_enable(data);
@@ -3310,6 +3446,10 @@ static void mxt_start(struct mxt_data *data)
 	if (!data->suspended || data->in_bootloader)
 		return;
 
+	if (data->ts_pinctrl) {
+		mxt_pinctrl_select(data, true);
+	}
+
 	if (data->use_regulator) {
 		enable_irq(data->irq);
 
@@ -3352,6 +3492,10 @@ static void mxt_stop(struct mxt_data *data)
 		mxt_regulator_disable(data);
 	else
 		mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
+
+	if (data->ts_pinctrl) {
+		mxt_pinctrl_select(data, false);
+	}
 
 	mxt_reset_slots(data);
 	data->suspended = true;
@@ -3501,12 +3645,22 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	init_completion(&data->crc_completion);
 	mutex_init(&data->debug_msg_lock);
 
+	error = mxt_pinctrl_init(data);
+	if (error)
+		TP_LOGI("No pinctrl support\n");
+
+	error = mxt_gpio_enable(data, true);
+	if (error) {
+		TP_LOGE("Failed to configure gpios\n");
+		goto err_free_mem;
+	}
+
 	error = request_threaded_irq(client->irq, NULL, mxt_interrupt,
 			pdata->irqflags | IRQF_ONESHOT,
 			client->name, data);
 	if (error) {
 		TP_LOGE("Failed to register interrupt\n");
-		goto err_free_mem;
+		goto err_free_gpios;
 	}
 
 	/* setup regulators and enable */
@@ -3549,6 +3703,8 @@ err_remove_sysfs_group:
 	sysfs_remove_group(&client->dev.kobj, &mxt_attr_group);
 err_free_irq:
 	free_irq(client->irq, data);
+err_free_gpios:
+	mxt_gpio_enable(data, false);
 err_free_mem:
 	kfree(data);
 	return error;
@@ -3585,7 +3741,7 @@ static int mxt_suspend(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	TP_LOGI("start\n");
+	TP_LOGI("suspend\n");
 
 	mutex_lock(&input_dev->mutex);
 
@@ -3603,7 +3759,7 @@ static int mxt_resume(struct device *dev)
 	struct mxt_data *data = i2c_get_clientdata(client);
 	struct input_dev *input_dev = data->input_dev;
 
-	TP_LOGI("start\n");
+	TP_LOGI("resume\n");
 
 	mutex_lock(&input_dev->mutex);
 
