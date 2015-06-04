@@ -88,7 +88,10 @@
 #endif
 //jonny E
 
-
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+#define PINCTRL_STATE_ACTIVE    "fp_active"
+#define PINCTRL_STATE_SUSPEND   "fp_suspend"
+/* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 /* Bit masks for spi_device.mode management.  Note that incorrect
@@ -227,6 +230,53 @@ reg_vdd_put:
 #endif
 //jonny E
 
+
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+static int silead_fp_pinctrl_init(struct spidev_data *data)
+{
+    int ret;
+
+    /* Get pinctrl if target uses pinctrl */
+    data->fp_pinctrl = devm_pinctrl_get(&data->spi->dev);
+    if (IS_ERR_OR_NULL(data->fp_pinctrl)) {
+        ret = PTR_ERR(data->fp_pinctrl);
+        dev_err(&data->spi->dev,
+            "Target does not use pinctrl %d\n", ret);
+        goto err_pinctrl_get;
+    }
+
+    data->pinctrl_state_active
+        = pinctrl_lookup_state(data->fp_pinctrl,
+                PINCTRL_STATE_ACTIVE);
+    if (IS_ERR_OR_NULL(data->pinctrl_state_active)) {
+        ret = PTR_ERR(data->pinctrl_state_active);
+        dev_err(&data->spi->dev,
+            "Can not lookup %s pinstate %d\n",
+            PINCTRL_STATE_ACTIVE, ret);
+        goto err_pinctrl_lookup;
+    }
+
+    data->pinctrl_state_suspend
+        = pinctrl_lookup_state(data->fp_pinctrl,
+            PINCTRL_STATE_SUSPEND);
+    if (IS_ERR_OR_NULL(data->pinctrl_state_suspend)) {
+        ret = PTR_ERR(data->pinctrl_state_suspend);
+        dev_err(&data->spi->dev,
+            "Can not lookup %s pinstate %d\n",
+            PINCTRL_STATE_SUSPEND, ret);
+        goto err_pinctrl_lookup;
+    }
+
+    printk("%s --\n", __func__);
+    return 0;
+
+err_pinctrl_lookup:
+    devm_pinctrl_put(data->fp_pinctrl);
+err_pinctrl_get:
+    data->fp_pinctrl = NULL;
+    return ret;
+}
+/* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
 #define SL_READ  0x00 //read flags
 #define SL_WRITE 0xFF //write flags
 static void spidev_work(struct work_struct *work);
@@ -1210,7 +1260,6 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
     int			status;
     unsigned long		minor, page;
     int			error; //jonny
-    struct pinctrl *pinctrl;
     
     printk("%s  S \n", __func__);  //jonny add
     
@@ -1244,13 +1293,28 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
 #endif
 //jonny E
 
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+	printk("%s  S3-0 \n", __func__);  //jonny add
 	/*Config gpio*/
-	pinctrl = devm_pinctrl_get_select_default(&spi->dev);
-	if(IS_ERR(pinctrl)) {
-		dev_warn(&spi->dev,"pins are not configured!\n");
-	}
+	error = silead_fp_pinctrl_init(spidev);
+	printk("%s  S3-1 \n", __func__);  //jonny add
+    if(!error && spidev->fp_pinctrl){
+        /*
+         * Pinctrl handle is optional. If pinctrl handle is found
+         * let pins to be configured in active state. If not
+         * found continue further without error.
+         */
+        error = pinctrl_select_state(spidev->fp_pinctrl,
+                    spidev->pinctrl_state_active);
+        if (error < 0) {
+            dev_err(&spi->dev,
+                "[silead]failed to select pin to active state");
+        }
+    }
+/* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
 #ifdef CONFIG_OF
 	spidev->shutdown_gpio = of_get_named_gpio(spi->dev.of_node,"shutdown_gpio",0);
+
 	if (gpio_is_valid(spidev->shutdown_gpio)) {
 		status = gpio_request(spidev->shutdown_gpio,
 				"silead_shutdown_gpio");
@@ -1258,8 +1322,6 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
 			dev_err(&spi->dev,
 					"reset gpio request failed");
 		} else {
-			gpio_set_value_cansleep(spidev->shutdown_gpio, 1);
-			gpio_direction_output(spidev->shutdown_gpio, 1); // add silead 20150330
 			dev_err(&spi->dev,
 					"reset gpio request success"); // add silead 20150330
 		}
@@ -1385,23 +1447,54 @@ static int spidev_reset_hight(void)
 static int spidev_suspend(struct spi_device *spi, pm_message_t mesg)
 {
     struct spidev_data	*spidev = spi_get_drvdata(spi);
+    int rc=0;// [PM99]  BUG#274 Jonny_Chan shutdown active/suspend
+
+    printk("%s  S \n", __func__);  // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
+    
     if (spidev->wake_up_gpio) {
         enable_irq(spidev->irq);
     } else {
         disable_irq(spidev->irq);
     }
+
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+        if(spidev->fp_pinctrl)
+        {	
+            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_suspend);
+            if(rc)
+                dev_err(&spi->dev, "[silead]cannot get suspend pinctrl state\n");
+        }
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */		
     atomic_set(&spidev->is_suspend, 1);
+
+    printk("%s  E \n", __func__);  // [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend
     return 0;
 }
 static int spidev_resume(struct spi_device *spi)
 {
     struct spidev_data	*spidev = spi_get_drvdata(spi);
+    int rc=0;// [PM99] BUG#274 Jonny_Chan shutdown active/suspend
+
+    printk("%s  S \n", __func__); // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
+    
     if (spidev->wake_up_gpio) {
         enable_irq(spidev->irq);
     } else {
         disable_irq(spidev->irq);
     }
+
+/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+        if(spidev->fp_pinctrl)
+        {
+            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_active);
+            if(rc)
+                dev_err(&spi->dev, "[silead]cannot get active pinctrl state\n");
+        }
+	
+/* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
+
     atomic_set(&spidev->is_suspend, 0);
+    printk("%s  E \n", __func__); // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
     return 0;
 }
 

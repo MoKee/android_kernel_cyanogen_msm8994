@@ -192,6 +192,11 @@ struct spidev_data {
     struct regulator *vdd;
 #endif
     //jonny E
+    /* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
+    struct pinctrl *fp_pinctrl;
+    struct pinctrl_state *pinctrl_state_active;
+    struct pinctrl_state *pinctrl_state_suspend;
+    /* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
 };
 // 20150414 by silead
 
