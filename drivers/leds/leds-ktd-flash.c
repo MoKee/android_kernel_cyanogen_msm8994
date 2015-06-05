@@ -89,6 +89,7 @@ struct ktd_flash_led_data {
 	struct gpio ctrl_gpio[3];
 	struct ktd_flash_led_cdev flash_cdev;
 	struct ktd_flash_led_cdev torch_cdev;
+	u8 suspend_state;
 };
 
 /*
@@ -119,6 +120,11 @@ static int led_ktd_flash_senddata(struct ktd_flash_led_data *flash_node, const u
 	unsigned long int_flags;
 	unsigned ctrl_gpio = flash_node->flash_ctrl->gpio;
 
+	if (flash_node->suspend_state == 1)
+	{
+		pr_err("flash node suspended!!\n");
+		return 0;
+	}
 	pr_err(" led_ktd_flash_senddata start: data=%2X\n", data);
 
 	spin_lock_irqsave(&ktd_lock, int_flags);
@@ -245,6 +251,13 @@ static void led_ktd_brightness_set(struct led_classdev *led_cdev,
 	flash_led_cdev = container_of(led_cdev, struct ktd_flash_led_cdev, cdev);
 	if (value < LED_OFF) {
 		pr_err("Invalid brightness value\n");
+		return;
+	}
+
+	if (flash_led_cdev->parent->suspend_state == 1)
+	{
+		led_cdev->brightness = LED_OFF;
+		pr_err("flash node suspended!!\n");
 		return;
 	}
 
@@ -707,6 +720,8 @@ int led_ktd_flash_probe(struct platform_device *pdev)
 			goto error_flash;
 		}
 
+		flash_led->flash_node[i].suspend_state = 0;
+
 		i++;
 	}
 
@@ -748,6 +763,58 @@ int led_ktd_flash_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int ktd_dev_pm_suspend(struct device *dev)
+{
+	struct platform_device *pdev;
+	struct ktd_flash_led *flash_led;
+	int i;
+
+	pdev = container_of(dev, struct platform_device, dev);
+	flash_led = (struct ktd_flash_led *)platform_get_drvdata(pdev);
+
+	for (i = 0; i < flash_led->num_leds; i++)
+	{
+		if (flash_led->flash_node[i].flash_cdev.cdev.brightness == 0 &&
+			flash_led->flash_node[i].torch_cdev.cdev.brightness == 0)
+		{
+			flash_led->flash_node[i].suspend_state = 1;
+			gpio_set_value(flash_led->flash_node[i].flash_ctrl->gpio, GPIO_OUT_LOW);
+			gpio_free(flash_led->flash_node[i].flash_ctrl->gpio);
+			gpio_free(flash_led->flash_node[i].flash_strobe->gpio);
+			gpio_free(flash_led->flash_node[i].flash_tx->gpio);
+		}
+	}
+	return 0;
+}
+
+static int ktd_dev_pm_resume(struct device *dev)
+{
+	struct platform_device *pdev;
+	struct ktd_flash_led *flash_led;
+	int i;
+
+	pdev = container_of(dev, struct platform_device, dev);
+	flash_led = (struct ktd_flash_led *)platform_get_drvdata(pdev);
+
+	for (i = 0; i < flash_led->num_leds; i++)
+	{
+		if (flash_led->flash_node[i].flash_cdev.cdev.brightness == 0 &&
+			flash_led->flash_node[i].torch_cdev.cdev.brightness == 0)
+		{
+			gpio_request_one(flash_led->flash_node[i].flash_ctrl->gpio, GPIOF_OUT_INIT_HIGH, flash_led->flash_node[i].flash_ctrl->label);
+			gpio_request_one(flash_led->flash_node[i].flash_strobe->gpio, GPIOF_OUT_INIT_LOW, flash_led->flash_node[i].flash_strobe->label);
+			gpio_request_one(flash_led->flash_node[i].flash_tx->gpio, GPIOF_OUT_INIT_LOW, flash_led->flash_node[i].flash_tx->label);
+			flash_led->flash_node[i].suspend_state = 0;
+		}
+	}
+	return 0;
+}
+
+static struct dev_pm_ops ktd_dev_pm_ops = {
+	.suspend = &ktd_dev_pm_suspend,
+	.resume = &ktd_dev_pm_resume,
+};
+
 static struct platform_driver led_ktd_flash_driver = {
 	.probe = led_ktd_flash_probe,
 	.remove = led_ktd_flash_remove,
@@ -755,6 +822,7 @@ static struct platform_driver led_ktd_flash_driver = {
 		.name = LED_KTD_FLASH_DRIVER_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = led_ktd_flash_of_match,
+		.pm = &ktd_dev_pm_ops,
 	}
 };
 
