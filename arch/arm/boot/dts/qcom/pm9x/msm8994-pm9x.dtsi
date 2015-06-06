@@ -905,6 +905,10 @@
 	};
 };
 
+&i2c_6 {
+	status = "ok";
+};
+
 &pm8994_gpios {
 	gpio@c200 { /* GPIO 3 */
 		qcom,mode = <0>;
