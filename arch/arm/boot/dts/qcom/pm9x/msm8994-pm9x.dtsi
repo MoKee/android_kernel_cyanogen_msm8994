@@ -1197,6 +1197,20 @@
 	status = "ok";
 };
 
+&qpnp_leds {
+	qcom,rgb_0 {
+		linux,default-trigger = "none";
+	};
+
+	qcom,rgb_1 {
+		linux,default_trigger = "none";
+	};
+
+	qcom,rgb_2 {
+		linux,default_trigger = "none";
+	};
+};
+
 &pmi8994_wled {
 	qcom,led-strings-list = [00 01];
 	qcom,fs-curr-ua = <20000>;

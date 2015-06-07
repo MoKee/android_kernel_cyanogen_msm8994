@@ -568,7 +568,7 @@
 			qcom,wave-samp-rep-cnt = <1>;
 		};
 
-		qcom,leds@d000 {
+		qpnp_leds: qcom,leds@d000 {
 			compatible = "qcom,leds-qpnp";
 			reg = <0xd000 0x100>;
 			label = "rgb";
