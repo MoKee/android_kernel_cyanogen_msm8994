@@ -24,4 +24,5 @@
 
 &pmi8994_charger {
 	qcom,charge-unknown-battery;
+	qcom,iterm-disabled;
 };
