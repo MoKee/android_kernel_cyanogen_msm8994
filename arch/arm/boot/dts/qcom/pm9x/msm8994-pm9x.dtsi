@@ -370,14 +370,26 @@
 		};
 	};
 
-	silead_fp_shutdown_pin {
+	silead_fp_shutdown_active {
 		qcom,pins = <&gp 89>;
 		qcom,num-grp-pins = <1>;
 		qcom,pin-func = <0>;
-		label = "silead_fp_shutdown";
-		silead_fp_shutdown: default {
+		label = "silead_fp_shutdown_active";
+		silead_fp_shutdown_active: silead_fp_shutdown_active {
 			drive-strength = <16>;
 			output-high;
+			bias-disable;
+		};
+	};
+
+	silead_fp_shutdown_suspend {
+		qcom,pins = <&gp 89>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "silead_fp_shutdown_suspend";
+		silead_fp_shutdown_suspend: silead_fp_shutdown_suspend {
+			drive-strength = <2>;
+			output-low;
 			bias-disable;
 		};
 	};
@@ -1138,8 +1150,9 @@
 &spi_26 {
 	silead,silead_fp@0 {
 		compatible = "silead_fp";
-		pinctrl-names = "default";
-		pinctrl-0 = <&silead_fp_shutdown>;
+		pinctrl-names = "fp_active","fp_suspend";
+		pinctrl-0 = <&silead_fp_shutdown_active>;
+		pinctrl-1 = <&silead_fp_shutdown_suspend>;
 		vio-supply = <&pm8994_lvs2>;
 		vdd-supply = <&pm8994_l18>;
 		reg = <0>;
