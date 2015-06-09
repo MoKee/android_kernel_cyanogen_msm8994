@@ -196,8 +196,8 @@
 
 #ifdef STK_TUNE0
 	#define STK_MAX_MIN_DIFF	500
-	#define STK_LT_N_CT	75
-	#define STK_HT_N_CT	130
+	#define STK_LT_N_CT	200
+	#define STK_HT_N_CT	280
 	//STK add for CCI start 20130112
 	#define MAX_COMPARE(a,b) (a>b)? a:b
 
@@ -2155,9 +2155,9 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	Diff_ThdL_CT = cci_ps_low_thd - cci_result_ct;
 	//when IT=0x73 and LED CURRENT=100mA, (ps_close-ps_ct) should be bigger than 75
 	//Optical team change the range from 75 to 100. 20130117
-	if(Diff_ThdL_CT > 100){
+	if(Diff_ThdL_CT > 200){
 		//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
-		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT+PS_H_L_DIFF; //*****************This is N2F value*************** set L+PS_H_L_DIFF=H
+		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT*14/10; //*****************This is N2F value*************** set (L-CT)*1.4+CT=H
 
 		//add for FTM interrupt check 20130424 start
 		printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_ct_show() cci_ps_high_thd = %d, cci_ps_low_thd = %d\n", __FUNCTION__, cci_ps_high_thd, cci_ps_low_thd);
@@ -2263,6 +2263,7 @@ static ssize_t als_CCI_test_Light_show(struct device *dev, struct device_attribu
 	//Test ALS 
 	struct stk3x1x_data *ps_data = dev_get_drvdata(dev);
 	int32_t als_reading;
+	bool result = false;
 	//uint32_t als_lux;
 	printk(KERN_ERR "%s:[#23][STK]Start testing light...\n", __func__);
 	msleep(150);
@@ -2273,8 +2274,10 @@ static ssize_t als_CCI_test_Light_show(struct device *dev, struct device_attribu
 	cci_als_value = stk_alscode2lux(ps_data, als_reading);
 	//cci_als_value = als_reading; //return raw data only
 	mutex_unlock(&ps_data->io_lock);
-	printk(KERN_ERR "%s:[#23][STK]Start testing light done!!! cci_als_value = %d lux, cci_als_test_adc = %d \n", __func__, cci_als_value,als_reading);
-	return scnprintf(buf, PAGE_SIZE, "cci_als_value = %d lux, cci_als_test_adc = %d \n", cci_als_value,als_reading);
+	if(cci_als_value>=255&&cci_als_value<=345)
+		result = true;
+	printk(KERN_ERR "%s:[#23][STK]Start testing light done!!! cci_als_value = %d lux, cci_als_test_adc = %d Result = %s\n", __func__, cci_als_value,als_reading, result ? "SUCCESS" : "FAIL");
+	return scnprintf(buf, PAGE_SIZE, "%s: cci_als_value = %d lux, cci_als_test_adc = %d \n", result ? "SUCCESS" : "FAIL",cci_als_value,als_reading);
 }
 
 static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribute *attr, char *buf)
@@ -2297,6 +2300,8 @@ static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribu
 	if(((cci_als_value_cali * ps_data->als_transmittance)/500) > 0){ //if cci_als_value_cali = 0, the cci_transmittance_cali will be always 0, so skip it.
 		cci_transmittance_cali = (cci_als_value_cali * ps_data->als_transmittance)/500; //transmittance for cali
 		ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
+		//calculate lux base on calibrated transmittance
+		cci_als_value_cali = stk_alscode2lux(ps_data, als_reading);
 		printk(KERN_ERR "%s:[#23][STK]cali light done!!! cci_als_value_cali = %d lux, cci_transmittance_cali = %d, cci_als_value_cali_adc = %d code\n", __func__, cci_als_value_cali, cci_transmittance_cali, cci_als_value_cali_adc);
 		result = true;
 		}
