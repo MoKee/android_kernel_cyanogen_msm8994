@@ -14,8 +14,9 @@
 &soc {
 	led_ktd_flash: qcom,leds-ktd-flash {
 		compatible = "qcom,leds-ktd-flash";
-		pinctrl-names = "ktd_flash_default";
+		pinctrl-names = "ktd_flash_default", "ktd_flash_suspend";
 		pinctrl-0 = <&led_ktd_flash0_default &led_ktd_flash1_default>;
+		pinctrl-1 = <&led_ktd_flash0_suspend &led_ktd_flash1_suspend>;
 
 		led_ktd_flash0: led_ktd_flash0 {
 			qcom,flash-ctrl = <&msm_gpio 14 0>;

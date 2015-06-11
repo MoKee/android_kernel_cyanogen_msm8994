@@ -208,6 +208,7 @@
 	led_ktd_flash0_default {
 		qcom,pins = <&gp 14>, <&gp 94>, <&gp 93>;
 		qcom,num-grp-pins = <3>;
+		qcom,pin-func = <0>;
 		label = "led_ktd_flash0_default";
 
 		led_ktd_flash0_default: led_ktd_flash0_default {
@@ -219,11 +220,38 @@
 	led_ktd_flash1_default {
 		qcom,pins = <&gp 8>, <&gp 29>, <&gp 57>;
 		qcom,num-grp-pins = <3>;
+		qcom,pin-func = <0>;
 		label = "led_ktd_flash1_default";
 
 		led_ktd_flash1_default: led_ktd_flash1_default {
 			drive-strength = <2>; /* 2 MA */
 			bias-disable; /* No PULL */
+		};
+	};
+
+	led_ktd_flash0_suspend {
+		/* CTRL, STROBE, TX */
+		qcom,pins = <&gp 14>, <&gp 94>, <&gp 93>;
+		qcom,num-grp-pins = <3>;
+		qcom,pin-func = <0>;
+		label = "led_ktd_flash0_suspend";
+
+		led_ktd_flash0_suspend: led_ktd_flash0_suspend {
+			drive-strength = <2>; /* 2 MA */
+			bias-pull-down; /* PULL DOWN */
+	       };
+	};
+
+	led_ktd_flash1_suspend {
+		/* CTRL, STROBE, TX */
+		qcom,pins = <&gp 8>, <&gp 29>, <&gp 57>;
+		qcom,num-grp-pins = <3>;
+		qcom,pin-func = <0>;
+		label = "led_ktd_flash1_suspend";
+
+		led_ktd_flash1_suspend: led_ktd_flash1_suspend {
+			drive-strength = <2>; /* 2 MA */
+			bias-pull-down; /* PULL DOWN */
 		};
 	};
 
@@ -1231,4 +1259,8 @@
 
 &pmi8994_wled {
 	qcom,led-strings-list = [00 01];
+};
+
+spi_0 {
+	status = "disabled";
 };
