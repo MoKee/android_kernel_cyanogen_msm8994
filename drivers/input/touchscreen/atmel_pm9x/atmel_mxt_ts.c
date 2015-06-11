@@ -1354,11 +1354,16 @@ static int mxt_proc_gesture_messages(struct mxt_data *data,
 #endif
 	num_keys = data->pdata->num_keys[key];
 	keymap = data->pdata->keymap[key];
+
+	TP_LOGI("Gesture index (%d), number keys (%u)\n", idx, num_keys);
+
 	if (idx >= 0 && num_keys) {
 		if (idx >= num_keys)
 			idx = num_keys - 1;
 
 		if (idx >= 0 && idx < num_keys) {
+			TP_LOGI("Gesture index (%d), send (%u) keycode\n",
+					idx, keymap[idx]);
 			input_event(input_dev, EV_KEY, keymap[idx], 1);
 			input_sync(input_dev);
 			input_event(input_dev, EV_KEY, keymap[idx], 0);
@@ -3279,6 +3284,26 @@ static int mxt_check_reg_init(struct mxt_data *data)
 		data_pos += offset;
 	}
 
+	TP_LOGI("File: "
+			"family_id (0x%02X) "
+			"variant_id (0x%02X) "
+			"version (0x%02X) "
+			"build (0x%02X)\n",
+			cfg_info.family_id,
+			cfg_info.variant_id,
+			cfg_info.version,
+			cfg_info.build);
+
+	TP_LOGI("IC: "
+			"family_id (0x%02X) "
+			"variant_id (0x%02X) "
+			"version (0x%02X) "
+			"build (0x%02X)\n",
+			data->info->family_id,
+			data->info->variant_id,
+			data->info->version,
+			data->info->build);
+
 	if (cfg_info.family_id != data->info->family_id) {
 		TP_LOGE("Family ID mismatch!\n");
 		ret = -EINVAL;
@@ -3287,6 +3312,18 @@ static int mxt_check_reg_init(struct mxt_data *data)
 
 	if (cfg_info.variant_id != data->info->variant_id) {
 		TP_LOGE("Variant ID mismatch!\n");
+		ret = -EINVAL;
+		goto release;
+	}
+
+	if (cfg_info.version != data->info->version) {
+		TP_LOGE("Version mismatch!\n");
+		ret = -EINVAL;
+		goto release;
+	}
+
+	if (cfg_info.build != data->info->build) {
+		TP_LOGE("Build mismatch!\n");
 		ret = -EINVAL;
 		goto release;
 	}
@@ -5830,6 +5867,12 @@ static void mxt_free_dt(struct mxt_data *data)
 		gpio_free(pdata->gpio_reset);
 		pdata->gpio_reset = 0;
 	}
+
+	if (pdata->gpio_irq) {
+		gpio_free(pdata->gpio_irq);
+		pdata->gpio_irq = 0;
+	}
+
 	if (pdata->num_keys) {
 		devm_kfree(dev, (void *)pdata->num_keys);
 		pdata->num_keys = NULL;
