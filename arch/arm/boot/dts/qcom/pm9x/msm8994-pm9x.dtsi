@@ -1182,6 +1182,7 @@
 	status = "okay";
 	qcom,actuator-type = "erm";
 	qcom,ilim-ma = <100>;
+	qcom,vmax-mv = <3200>;
 };
 
 &pmi8994_charger {
