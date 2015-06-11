@@ -7,15 +7,13 @@
 			compatible = "atmel,maxtouch";
 			reg = <0x4a>;
 			interrupt-parent = <&msm_gpio>;
-			interrupts = <76 0x2008>;
-			pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
-			pinctrl-0 = <&atmel_int_active &atmel_reset_active>;
-			pinctrl-1 = <&atmel_int_suspend &atmel_reset_suspend>;
+			interrupts = <76 0x8>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&atmel_default>;
 			vdd-supply = <&pm8994_l22>;
 			avdd-supply = <&pm8994_l14>;
 			atmel,reset-gpio = <&msm_gpio 96 0x0>;
-			atmel,irq-gpio = <&msm_gpio 76 0x2008>;
-			atmel,cfg_name = "atmel_cfg.raw";
+			atmel,irq-gpio = <&msm_gpio 76 0x8>;
 		};
 	};
 };
@@ -25,27 +23,8 @@
 		qcom,pins = <&gp 76>;
 		qcom,pin-func = <0>;
 		qcom,num-grp-pins = <1>;
-		label = "atmel-int";
-		atmel_int_active: atmel_int_active {
-			drive-strength = <8>;
-			bias-pull-up;
-		};
-		atmel_int_suspend: atmel_int_suspend {
-			drive-strength = <8>;
-			bias-disable;
-		};
-	};
-
-	atmel_reset_pin {
-		qcom,pins = <&gp 96>;
-		qcom,pin-func = <0>;
-		qcom,num-grp-pins = <1>;
-		label = "atmel-reset";
-		atmel_reset_active: atmel_reset_active {
-			drive-strength = <8>;
-			bias-disable;
-		};
-		atmel_reset_suspend: atmel_reset_suspend {
+		label = "atmel-irq";
+		atmel_default: atmel_default {
 			drive-strength = <8>;
 			bias-disable;
 		};
