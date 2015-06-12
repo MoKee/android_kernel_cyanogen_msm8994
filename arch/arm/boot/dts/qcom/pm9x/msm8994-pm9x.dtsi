@@ -184,7 +184,7 @@
 		label = "stk3x1x-irq";
 		stk3x1x_default: stk3x1x_default {
 			drive-strength = <8>;
-			bias-pull-up;
+			bias-disable;
 		};
 	};
 
