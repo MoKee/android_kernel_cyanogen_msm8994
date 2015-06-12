@@ -103,10 +103,10 @@ struct ktd_flash_led {
 	struct pinctrl_state *gpio_state_suspend;
 	int				num_leds;
 };
-unsigned long flash_current = 0;
-unsigned long torch_current = 0;
+
 unsigned long flash_duration = 0;
 unsigned long min_current = 0;
+unsigned int curr_manual_mode = 0;
 
 static DEFINE_SPINLOCK(ktd_lock);
 
@@ -125,7 +125,7 @@ static int led_ktd_flash_senddata(struct ktd_flash_led_data *flash_node, const u
 		pr_err("flash node suspended!!\n");
 		return 0;
 	}
-	pr_err(" led_ktd_flash_senddata start: data=%2X\n", data);
+	CDBG(" led_ktd_flash_senddata start: gpio=%d, data=%2X\n", ctrl_gpio, data);
 
 	spin_lock_irqsave(&ktd_lock, int_flags);
 
@@ -147,7 +147,7 @@ static int led_ktd_flash_senddata(struct ktd_flash_led_data *flash_node, const u
 	udelay(400); //typical val: 350 us
 	spin_unlock_irqrestore(&ktd_lock, int_flags);
 
-	pr_err("led_ktd_flash_senddata end");
+	CDBG("led_ktd_flash_senddata end");
 
 	return 0;
 }
@@ -164,7 +164,7 @@ static void led_ktd_flash_set_flash_current(struct ktd_flash_led_data *flash_nod
 		flash_curr_level = 0x0F;
 	
 	data = LED_KTD_FLASH_CURR_SET_ADDR | (flash_curr_level & 0x0F);
-	pr_err("led_ktd_flash_set_flash_current: curr = %d, level = %d, data = %x", curr, flash_curr_level, data);
+	CDBG("led_ktd_flash_set_flash_current: curr = %d, level = %d, data = %x", curr, flash_curr_level, data);
 
 	led_ktd_flash_senddata(flash_node, (const unsigned char)data);
 }
@@ -181,7 +181,7 @@ static void led_ktd_flash_set_torch_current(struct ktd_flash_led_data *flash_nod
 		torch_curr_level = 0x0F;
 	
 	data = LED_KTD_TORCH_CURR_SET_ADDR | (torch_curr_level & 0x0F);
-	pr_err("led_ktd_flash_set_torch_current: curr = %d, level = %d, data = %x", curr, torch_curr_level, data);
+	CDBG("led_ktd_flash_set_torch_current: curr = %d, level = %d, data = %x", curr, torch_curr_level, data);
 
 	led_ktd_flash_senddata(flash_node, (const unsigned char)data);
 }
@@ -207,7 +207,7 @@ static void led_ktd_flash_set_flash_duration(struct ktd_flash_led_data *flash_no
 	}
 	
 	data = LED_KTD_FLASH_DURA_SET_ADDR | (flash_dura_level & 0x0F);
-	pr_err("led_ktd_flash_set_flash_duration: time = %d, level = %d, data = %x", time, flash_dura_level, data);
+	CDBG("led_ktd_flash_set_flash_duration: time = %d, level = %d, data = %x", time, flash_dura_level, data);
 
 	led_ktd_flash_senddata(flash_node, (const unsigned char)data);
 }
@@ -230,7 +230,7 @@ static void led_ktd_flash_set_min_current(struct ktd_flash_led_data *flash_node,
 	}
 	
 	data = LED_KTD_FLASH_MIN_CURRENT_ADDR| (min_current_level & 0x0F);
-	pr_err("led_ktd_flash_set_min_current: value = %d, min_current_level = %d, data = %x", value, min_current_level, data);
+	CDBG("led_ktd_flash_set_min_current: value = %d, min_current_level = %d, data = %x", value, min_current_level, data);
 
 	led_ktd_flash_senddata(flash_node, (const unsigned char)data);
 }
@@ -238,7 +238,7 @@ static void led_ktd_flash_set_min_current(struct ktd_flash_led_data *flash_node,
 
 static enum led_brightness led_ktd_brightness_get(struct led_classdev *led_cdev)
 {
-	pr_err("led_ktd_brightness_get: brightness:%d\n", led_cdev->brightness);
+	CDBG("led_ktd_brightness_get: brightness:%d\n", led_cdev->brightness);
 	return led_cdev->brightness;
 }
 
@@ -247,7 +247,7 @@ static void led_ktd_brightness_set(struct led_classdev *led_cdev,
 {
 	struct ktd_flash_led_cdev *flash_led_cdev;
 
-	pr_err("led_ktd_brightness_set: brightness value:%d\n", value);
+	CDBG("led_ktd_brightness_set: brightness value:%d\n", value);
 	flash_led_cdev = container_of(led_cdev, struct ktd_flash_led_cdev, cdev);
 	if (value < LED_OFF) {
 		pr_err("Invalid brightness value\n");
@@ -265,6 +265,10 @@ static void led_ktd_brightness_set(struct led_classdev *led_cdev,
 		value = flash_led_cdev->cdev.max_brightness;
 
 	led_cdev->brightness = value;
+#ifdef CONFIG_KTD_FLASH_DEBUG
+	if (curr_manual_mode == 1 && value != LED_OFF)
+		value = flash_led_cdev->prgm_current;
+#endif
 
 	if (value == LED_OFF)
 	{
@@ -303,7 +307,10 @@ static void led_ktd_brightness_set(struct led_classdev *led_cdev,
 static ssize_t flash_current_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%lu\n", flash_current);
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	struct ktd_flash_led_cdev *flash_led_cdev = container_of(led_cdev, struct ktd_flash_led_cdev, cdev);
+
+	return sprintf(buf, "%lu\n", (unsigned long)flash_led_cdev->prgm_current);
 }
 
 static ssize_t flash_current_store(struct device *dev,
@@ -317,9 +324,12 @@ static ssize_t flash_current_store(struct device *dev,
 	ret = kstrtoul(buf, 10, &value);
 	if (ret)
 		return ret;
-	led_ktd_flash_set_flash_current(flash_led_cdev->parent, value);	
-	flash_current = value;
-
+#ifdef CONFIG_KTD_FLASH_DEBUG
+	flash_led_cdev->prgm_current = value;
+	//led_ktd_flash_set_flash_current(flash_led_cdev->parent, value);
+	//flash_current = value;
+	curr_manual_mode = 1;
+#endif
 	return size;
 }
 
@@ -328,7 +338,10 @@ static DEVICE_ATTR(flash_current, 0644, flash_current_show, flash_current_store)
 static ssize_t torch_current_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%lu\n", torch_current);
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+	struct ktd_flash_led_cdev *flash_led_cdev = container_of(led_cdev, struct ktd_flash_led_cdev, cdev);
+
+	return sprintf(buf, "%lu\n", (unsigned long)flash_led_cdev->prgm_current);
 }
 
 static ssize_t torch_current_store(struct device *dev,
@@ -342,9 +355,12 @@ static ssize_t torch_current_store(struct device *dev,
 	ret = kstrtoul(buf, 10, &value);
 	if (ret)
 		return ret;
-	led_ktd_flash_set_torch_current(flash_led_cdev->parent, value);	
-	torch_current = value;
-
+#ifdef CONFIG_KTD_FLASH_DEBUG
+	flash_led_cdev->prgm_current = value;
+	//led_ktd_flash_set_torch_current(flash_led_cdev->parent, value);
+	//torch_current = value;
+	curr_manual_mode = 1;
+#endif
 	return size;
 }
 
@@ -367,9 +383,10 @@ static ssize_t flash_duration_store(struct device *dev,
 	ret = kstrtoul(buf, 10, &value);
 	if (ret)
 		return ret;
+#ifdef CONFIG_KTD_FLASH_DEBUG
 	led_ktd_flash_set_flash_duration(flash_led_cdev->parent, value);	
 	flash_duration = value;
-
+#endif
 	return size;
 }
 
@@ -392,9 +409,10 @@ static ssize_t min_current_store(struct device *dev,
 	ret = kstrtoul(buf, 10, &value);
 	if (ret)
 		return ret;
+#ifdef CONFIG_KTD_FLASH_DEBUG
 	led_ktd_flash_set_min_current(flash_led_cdev->parent, value);	
 	min_current = value;
-
+#endif
 	return size;
 }
 
@@ -729,7 +747,7 @@ int led_ktd_flash_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, flash_led);
 
-	pr_err("%s:probe successfully!\n", __func__);
+	CDBG("%s:probe successfully!\n", __func__);
 	return 0;
 error_torch:
 	led_classdev_unregister(&flash_led->flash_node[i].torch_cdev.cdev);
