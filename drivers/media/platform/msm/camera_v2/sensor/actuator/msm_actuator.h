@@ -26,11 +26,7 @@
 	static struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
 
 #define	MSM_ACTUATOT_MAX_VREGS (10)
-#ifdef CONFIG_MACH_PM9X
-#define	ACTUATOR_MAX_POLL_COUNT 20
-#else
 #define	ACTUATOR_MAX_POLL_COUNT 10
-#endif
 
 struct msm_actuator_ctrl_t;
 
