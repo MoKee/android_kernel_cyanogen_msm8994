@@ -796,9 +796,7 @@ static int32_t msm_actuator_bivcm_init_step_table(
 {
 	int16_t code_per_step = 0;
 	int16_t cur_code = 0;
-#ifndef CONFIG_MACH_PM9X
 	int16_t cur_code_se = 0;
-#endif
 	int16_t step_index = 0, region_index = 0;
 	uint16_t step_boundary = 0;
 	uint32_t max_code_size = 1;
@@ -807,19 +805,13 @@ static int32_t msm_actuator_bivcm_init_step_table(
 	uint32_t qvalue = 0;
 	CDBG("Enter\n");
 
-#ifdef CONFIG_MACH_PM9X
-	se_shift = 1 << (data_size -1);
-#endif
-
 	for (; data_size > 0; data_size--) {
 		max_code_size *= 2;
 		mask |= (1 << i++);
 	}
 
-#ifndef CONFIG_MACH_PM9X
 	se_shift = (sizeof(cur_code) * 8) -
 				set_info->actuator_params.data_size;
-#endif
 
 	a_ctrl->max_code_size = max_code_size;
 	kfree(a_ctrl->step_position_table);
@@ -852,22 +844,15 @@ static int32_t msm_actuator_bivcm_init_step_table(
 		qvalue = a_ctrl->region_params[region_index].qvalue;
 		for (; step_index <= step_boundary;
 			step_index++) {
-#ifndef CONFIG_MACH_PM9X
 			cur_code_se = cur_code << se_shift;
 			cur_code_se >>= se_shift;
-#endif
 			if (qvalue > 1 && qvalue <= MAX_QVALUE)
 				cur_code = step_index * code_per_step / qvalue;
 			else
 				cur_code = step_index * code_per_step;
-#ifdef CONFIG_MACH_PM9X
-			cur_code = set_info->af_tuning_params.initial_code + cur_code;
-			if (cur_code + se_shift < max_code_size)
-#else
 			cur_code = (set_info->af_tuning_params.initial_code +
 				cur_code) & mask;
 			if (cur_code < max_code_size)
-#endif
 				a_ctrl->step_position_table[step_index] =
 					cur_code;
 			else {
