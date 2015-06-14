@@ -1261,6 +1261,6 @@
 	qcom,led-strings-list = [00 01];
 };
 
-spi_0 {
+&spi_0 {
 	status = "disabled";
 };
