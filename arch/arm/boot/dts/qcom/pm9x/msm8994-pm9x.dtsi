@@ -621,6 +621,7 @@
 };
 
 &mdss_dsi0 {
+	vdd-supply = <&pm8994_s4>;
 	qcom,dsi-pref-prim-pan = <&dsi_sharp_qhd0_cmd>;
 	pinctrl-names = "mdss_default", "mdss_sleep";
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
@@ -631,6 +632,7 @@
 };
 
 &mdss_dsi1 {
+	vdd-supply = <&pm8994_s4>;
 	qcom,dsi-pref-prim-pan = <&dsi_sharp_qhd1_cmd>;
 };
 
