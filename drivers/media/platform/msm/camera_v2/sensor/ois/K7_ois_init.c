@@ -64,7 +64,8 @@ K7_OISINI__ const struct STFILRAM	CsFilRam_C01X_G[FILRAMTAB_G] = {
 		{ 0x1017,	0xBF5C8CC0},		/*BF5C8CC0,1017,LBF,0.82Hz,0.95Hz,0dB,fs/8,invert=0*/
 		{ 0x1018,	0x3F7F8CC0},		/*3F7F8CC0,1018,LBF,0.82Hz,0.95Hz,0dB,fs/8,invert=0*/
 		{ 0x1019,	0x00000000},		/*00000000,1019,Free,fs/8,invert=0*/
-		{ 0x101A,	0x3B031240},		/*3B031240,101A,Free,fs/8,invert=0*/
+//		{ 0x101A,	0x3B031240},//0.002	/*3B031240,101A,Free,fs/8,invert=0*/
+		{ 0x101A,   0x3B831240},//0.004	/*3B831240,101A,Free,fs/8,invert=0*/
 		{ 0x101B,	0x3F800000},		/*3F800000,101B,Free,fs/8,invert=0*/
 		{ 0x101C,	0x3F800000},		/*3F800000,101C,0dB,invert=0*/
 		{ 0x101D,	0x00000000},		/*00000000,101D,Cutoff,invert=0*/
@@ -148,8 +149,125 @@ K7_OISINI__ const struct STFILRAM	CsFilRam_C01X_G[FILRAMTAB_G] = {
 		{ 0xFFFF,	0xFFFFFFFF}
 } ;
 
-#endif	//CATCHMODE
+// LGIT
+/*Filter Calculator Version 4.02*/
+/*the time and date : 2015/3/7 17:51:30*/
+/*FC filename : LC898122_FIL_G4_V0034_4th_catch*/
+/*fs,23438Hz*/
+/*LSI No.,LC898122*/
+/*Comment,*/
+/* 32bit */
+K7_OISINI__ const struct STFILRAM	CsFilRam_C00X_G[FILRAMTAB_G] = {
+		{ 0x1000,	0x3F800000},		/*3F800000,1000,0dB,invert=0*/
+		{ 0x1001,	0x3F800000},		/*3F800000,1001,0dB,invert=0*/
+		{ 0x1002,	0x00000000},		/*00000000,1002,Cutoff,invert=0*/
+		{ 0x1003,	0x3F800000},		/*3F800000,1003,0dB,invert=0*/
+		{ 0x1004,	0x3F787240},		/*3F787240,1004,LBF,9.44Hz,9.73Hz,0dB,fs/8,invert=0*/
+		{ 0x1005,	0xBF7350C0},		/*BF7350C0,1005,LBF,9.44Hz,9.73Hz,0dB,fs/8,invert=0*/
+		{ 0x1006,	0x3F7ADE80},		/*3F7ADE80,1006,LBF,9.44Hz,9.73Hz,0dB,fs/8,invert=0*/
+		{ 0x1007,	0x00000000},		/*00000000,1007,Cutoff,invert=0*/
+		{ 0x1008,	0x3F800000},		/*3F800000,1008,0dB,invert=0*/
+		{ 0x1009,	0xBF800000},		/*BF800000,1009,0dB,invert=1*/
+		{ 0x100A,	0x3F800000},		/*3F800000,100A,0dB,invert=0*/
+		{ 0x100B,	0x3F800000},		/*3F800000,100B,0dB,invert=0*/
+		{ 0x100C,	0x3F800000},		/*3F800000,100C,0dB,invert=0*/
+		{ 0x100E,	0x3F800000},		/*3F800000,100E,0dB,invert=0*/
+		{ 0x1010,	0x3F22AD80},		/*3F22AD80,1010*/
+		{ 0x1011,	0x00000000},		/*00000000,1011,Free,fs/8,invert=0*/
+		{ 0x1012,	0x3F7FF000},		/*3F7FF000,1012,Free,fs/8,invert=0*/
+		{ 0x1013,	0x40A5C940},		/*40A5C940,1013,HBF,45Hz,2000Hz,23.83dB,fs/8,invert=0*/
+		{ 0x1014,	0xC0968600},		/*C0968600,1014,HBF,45Hz,2000Hz,23.83dB,fs/8,invert=0*/
+		{ 0x1015,	0xBEBA5D40},		/*BEBA5D40,1015,HBF,45Hz,2000Hz,23.83dB,fs/8,invert=0*/
+		{ 0x1016,	0x3F5CFFC0},		/*3F5CFFC0,1016,LBF,0.82Hz,0.95Hz,0dB,fs/8,invert=0*/
+		{ 0x1017,	0xBF5C8CC0},		/*BF5C8CC0,1017,LBF,0.82Hz,0.95Hz,0dB,fs/8,invert=0*/
+		{ 0x1018,	0x3F7F8CC0},		/*3F7F8CC0,1018,LBF,0.82Hz,0.95Hz,0dB,fs/8,invert=0*/
+		{ 0x1019,	0x00000000},		/*00000000,1019,Free,fs/8,invert=0*/
+//		{ 0x101A,	0x3B031240},//0.002	/*3B031240,101A,Free,fs/8,invert=0*/
+		{ 0x101A,   0x3B831240},//0.004	/*3B831240,101A,Free,fs/8,invert=0*/
+		{ 0x101B,	0x3F800000},		/*3F800000,101B,Free,fs/8,invert=0*/
+		{ 0x101C,	0x3F800000},		/*3F800000,101C,0dB,invert=0*/
+		{ 0x101D,	0x00000000},		/*00000000,101D,Cutoff,invert=0*/
+		{ 0x101E,	0x3F800000},		/*3F800000,101E,0dB,invert=0*/
+		{ 0x1020,	0x3F800000},		/*3F800000,1020,0dB,invert=0*/
+		{ 0x1021,	0x3F800000},		/*3F800000,1021,0dB,invert=0*/
+		{ 0x1022,	0x40062E40},		/*3FFEF880,1022,6.4302dB,invert=0*/
+		{ 0x1023,	0x3A117DC0},		/*3A117DC0,1023,LPF,180Hz,0dB,0,fs/1,invert=0*/
+		{ 0x1024,	0x3A917DC0},		/*3A917DC0,1024,LPF,180Hz,0dB,0,fs/1,invert=0*/
+		{ 0x1025,	0x3FF3F040},		/*3FF3F040,1025,LPF,180Hz,0dB,0,fs/1,invert=0*/
+		{ 0x1026,	0x3A117DC0},		/*3A117DC0,1026,LPF,180Hz,0dB,0,fs/1,invert=0*/
+		{ 0x1027,	0xBF6871C0},		/*BF6871C0,1027,LPF,180Hz,0dB,0,fs/1,invert=0*/
+		{ 0x1030,	0x00000000},		/*00000000,1030,Free,fs/8,invert=0*/
+		{ 0x1031,	0x3F800000},		/*3F800000,1031,Free,fs/8,invert=0*/
+		{ 0x1032,	0x00000000},		/*00000000,1032,Free,fs/8,invert=0*/
+		{ 0x1033,	0x3F800000},		/*3F800000,1033,Through,0dB,fs/8,invert=0*/
+		{ 0x1034,	0x00000000},		/*00000000,1034,Through,0dB,fs/8,invert=0*/
+		{ 0x1035,	0x00000000},		/*00000000,1035,Through,0dB,fs/8,invert=0*/
+		{ 0x1036,	0x4F7FFFC0},		/*4F7FFFC0,1036,Free,fs/8,invert=0*/
+		{ 0x1037,	0x00000000},		/*00000000,1037,Free,fs/8,invert=0*/
+		{ 0x1038,	0x00000000},		/*00000000,1038,Free,fs/8,invert=0*/
+		{ 0x1039,	0x00000000},		/*00000000,1039,Free,fs/8,invert=0*/
+		{ 0x103A,	0x30800000},		/*30800000,103A,Free,fs/8,invert=0*/
+		{ 0x103B,	0x00000000},		/*00000000,103B,Free,fs/8,invert=0*/
+		{ 0x103C,	0x3F800000},		/*3F800000,103C,Through,0dB,fs/8,invert=0*/
+		{ 0x103D,	0x00000000},		/*00000000,103D,Through,0dB,fs/8,invert=0*/
+		{ 0x103E,	0x00000000},		/*00000000,103E,Through,0dB,fs/8,invert=0*/
+		{ 0x1043,	0x3B522600},		/*3B522600,1043,LPF,3Hz,0dB,fs/8,invert=0*/
+		{ 0x1044,	0x3B522600},		/*3B522600,1044,LPF,3Hz,0dB,fs/8,invert=0*/
+		{ 0x1045,	0x3F7E5BC0},		/*3F7E5BC0,1045,LPF,3Hz,0dB,fs/8,invert=0*/
+		{ 0x1046,	0x3A0C7980},		/*3A0C7980,1046,LPF,0.5Hz,0dB,fs/8,invert=0*/
+		{ 0x1047,	0x3A0C7980},		/*3A0C7980,1047,LPF,0.5Hz,0dB,fs/8,invert=0*/
+		{ 0x1048,	0x3F7FB9C0},		/*3F7FB9C0,1048,LPF,0.5Hz,0dB,fs/8,invert=0*/
+		{ 0x1049,	0x3A8C6640},		/*3A8C6640,1049,LPF,1Hz,0dB,fs/8,invert=0*/
+		{ 0x104A,	0x3A8C6640},		/*3A8C6640,104A,LPF,1Hz,0dB,fs/8,invert=0*/
+		{ 0x104B,	0x3F7F7380},		/*3F7F7380,104B,LPF,1Hz,0dB,fs/8,invert=0*/
+		{ 0x104C,	0x3B0C3FC0},		/*3B0C3FC0,104C,LPF,2Hz,0dB,fs/8,invert=0*/
+		{ 0x104D,	0x3B0C3FC0},		/*3B0C3FC0,104D,LPF,2Hz,0dB,fs/8,invert=0*/
+		{ 0x104E,	0x3F7EE780},		/*3F7EE780,104E,LPF,2Hz,0dB,fs/8,invert=0*/
+		{ 0x1053,	0x00000000},		/*00000000,1053,Free,fs/8,invert=0*/
+		{ 0x1054,	0x3AB78000},		/*3AB78000,1054,Free,fs/8,invert=0*/
+		{ 0x1055,	0x3F800000},		/*3F800000,1055,Free,fs/8,invert=0*/
+		{ 0x1056,	0x3F800000},		/*3F800000,1056,Through,0dB,fs/8,invert=0*/
+		{ 0x1057,	0x00000000},		/*00000000,1057,Through,0dB,fs/8,invert=0*/
+		{ 0x1058,	0x00000000},		/*00000000,1058,Through,0dB,fs/8,invert=0*/
+		{ 0x1059,	0x3F800000},		/*3F800000,1059,Through,0dB,fs/8,invert=0*/
+		{ 0x105A,	0x00000000},		/*00000000,105A,Through,0dB,fs/8,invert=0*/
+		{ 0x105B,	0x00000000},		/*00000000,105B,Through,0dB,fs/8,invert=0*/
+		{ 0x105C,	0x3F800000},		/*3F800000,105C,Through,0dB,fs/8,invert=0*/
+		{ 0x105D,	0x00000000},		/*00000000,105D,Through,0dB,fs/8,invert=0*/
+		{ 0x105E,	0x00000000},		/*00000000,105E,Through,0dB,fs/8,invert=0*/
+		{ 0x1063,	0x3F800000},		/*3F800000,1063,0dB,invert=0*/
+		{ 0x1066,	0x3F800000},		/*3F800000,1066,0dB,invert=0*/
+		{ 0x1069,	0x3F800000},		/*3F800000,1069,0dB,invert=0*/
+		{ 0x106C,	0x3F800000},		/*3F800000,106C,0dB,invert=0*/
+		{ 0x1073,	0x00000000},		/*00000000,1073,Cutoff,invert=0*/
+		{ 0x1076,	0x3F800000},		/*3F800000,1076,0dB,invert=0*/
+		{ 0x1079,	0x3F800000},		/*3F800000,1079,0dB,invert=0*/
+		{ 0x107C,	0x3F800000},		/*3F800000,107C,0dB,invert=0*/
+		{ 0x1083,	0x38D1B700},		/*38D1B700,1083,-80dB,invert=0*/
+		{ 0x1086,	0x00000000},		/*00000000,1086,Cutoff,invert=0*/
+		{ 0x1089,	0x00000000},		/*00000000,1089,Cutoff,invert=0*/
+		{ 0x108C,	0x00000000},		/*00000000,108C,Cutoff,invert=0*/
+		{ 0x1093,	0x00000000},		/*00000000,1093,Cutoff,invert=0*/
+		{ 0x1098,	0x3F800000},		/*3F800000,1098,0dB,invert=0*/
+		{ 0x1099,	0x3F800000},		/*3F800000,1099,0dB,invert=0*/
+		{ 0x109A,	0x3F800000},		/*3F800000,109A,0dB,invert=0*/
+		{ 0x10A1,	0x3BDA2580},		/*3BDA2580,10A1,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10A2,	0x3BDA2580},		/*3BDA2580,10A2,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10A3,	0x3F7C9780},		/*3F7C9780,10A3,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10A4,	0x00000000},		/*00000000,10A4,Free,fs/1,invert=0*/
+		{ 0x10A5,	0x30800000},		/*30800000,10A5,Free,fs/1,invert=0*/
+		{ 0x10A6,	0x00000000},		/*00000000,10A6,Free,fs/1,invert=0*/
+		{ 0x10A7,	0x3F800000},		/*3F800000,10A7,Through,0dB,fs/8,invert=0*/
+		{ 0x10A8,	0x00000000},		/*00000000,10A8,Through,0dB,fs/8,invert=0*/
+		{ 0x10A9,	0x00000000},		/*00000000,10A9,Through,0dB,fs/8,invert=0*/
+		{ 0x10AA,	0x00000000},		/*00000000,10AA,Cutoff,invert=0*/
+		{ 0x10AB,	0x3BDA2580},		/*3BDA2580,10AB,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10AC,	0x3BDA2580},		/*3BDA2580,10AC,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10AD,	0x3F7C9780},		/*3F7C9780,10AD,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0xFFFF,	0xFFFFFFFF}
+} ;
 
+#endif	//CATCHMODE
 
 /*Filter Calculator Version 4.02*/
 /*the time and date : 2015/1/7 14:59:12*/
@@ -161,7 +279,11 @@ K7_OISINI__ const struct STFILRAM	CsFilRam_C01X_G[FILRAMTAB_G] = {
 /* 8bit */
 K7_OISINI__ const struct STFILREG	CsFilReg_C013[FILREGTAB]	= {
 	
-		{ 0x0111,	0x00},		/*00,0111*/
+#ifdef	CATCHMODE
+		{ 0x0111,	0x07},		/*00,0111*/		// 1/8 Down Sampling
+#else	//CATCHMODE
+		{ 0x0111,	0x00},		/*00,0111*/		// 1/1
+#endif	//CATCHMODE
 		{ 0x0113,	0x00},		/*00,0113*/
 		{ 0x0114,	0x00},		/*00,0114*/
 		{ 0x0172,	0x00},		/*00,0172*/
@@ -378,7 +500,237 @@ K7_OISINI__ const struct STFILRAM	CsFilRam_C013[FILRAMTAB] = {
 		{ 0xFFFF,	0xFFFFFFFF}
 } ;
 
+/*Filter Calculator Version 4.02*/
+/*the time and date : 2014/12/8 14:49:38*/
+/*FC filename : LC898122_FIL_G4_V0020_4th*/
+/*fs,23438Hz*/
+/*LSI No.,LC898122*/
+/*Comment,*/
 
+/* 8bit */
+K7_OISINI__ const struct STFILREG	CsFilReg_C003[FILREGTAB]	= {
+	
+#ifdef	CATCHMODE
+		{ 0x0111,	0x07},		/*00,0111*/		// 1/8 Down Sampling
+#else	//CATCHMODE
+		{ 0x0111,	0x00},		/*00,0111*/		// 1/1
+#endif	//CATCHMODE
+		{ 0x0113,	0x00},		/*00,0113*/
+		{ 0x0114,	0x00},		/*00,0114*/
+		{ 0x0172,	0x00},		/*00,0172*/
+		{ 0x01E3,	0x0F},		/*0F,01E3*/
+		{ 0x01E4,	0x00},		/*00,01E4*/
+		{ 0xFFFF,	0xFF }
+	
+} ;
+
+/* 32bit */
+K7_OISINI__ const struct STFILRAM	CsFilRam_C003[FILRAMTAB] = {
+
+		{ 0x1000,	0x3F800000},		/*3F800000,1000,0dB,invert=0*/
+		{ 0x1001,	0x3F800000},		/*3F800000,1001,0dB,invert=0*/
+		{ 0x1002,	0x00000000},		/*00000000,1002,Cutoff,invert=0*/
+		{ 0x1003,	0x3F800000},		/*3F800000,1003,0dB,invert=0*/
+		{ 0x1004,	0x37A8A800},		/*37A8A800,1004,LPF,0.15Hz,0dB,fs/1,invert=0*/
+		{ 0x1005,	0x37A8A800},		/*37A8A800,1005,LPF,0.15Hz,0dB,fs/1,invert=0*/
+		{ 0x1006,	0x3F7FFD40},		/*3F7FFD40,1006,LPF,0.15Hz,0dB,fs/1,invert=0*/
+		{ 0x1007,	0x3F800000},		/*3F800000,1007,0dB,invert=0*/
+		{ 0x1008,	0xBF800000},		/*BF800000,1008,0dB,invert=1*/
+		{ 0x1009,	0x3F800000},		/*3F800000,1009,0dB,invert=0*/
+		{ 0x100A,	0x3F800000},		/*3F800000,100A,0dB,invert=0*/
+		{ 0x100B,	0x3F800000},		/*3F800000,100B,0dB,invert=0*/
+		{ 0x100C,	0x3F800000},		/*3F800000,100C,0dB,invert=0*/
+		{ 0x100E,	0x3F800000},		/*3F800000,100E,0dB,invert=0*/
+		{ 0x1010,	0x3DA2ADC0},		/*3DA2ADC0,1010*/
+		{ 0x1011,	0x00000000},		/*00000000,1011,Free,fs/1,invert=0*/
+		{ 0x1012,	0x3F7FFD80},		/*3F7FFD80,1012,Free,fs/1,invert=0*/
+		{ 0x1013,	0x3F7AAE40},		/*3F7AAE40,1013,HBF,80Hz,240Hz,0dB,fs/1,invert=0*/
+		{ 0x1014,	0xBF755C80},		/*BF755C80,1014,HBF,80Hz,240Hz,0dB,fs/1,invert=0*/
+		{ 0x1015,	0x3F700B00},		/*3F700B00,1015,HBF,80Hz,240Hz,0dB,fs/1,invert=0*/
+		{ 0x1016,	0x40B3EFC0},		/*40B3EFC0,1016,HPF,0.54Hz,15dB,fs/1,invert=0*/
+		{ 0x1017,	0xC0B3EFC0},		/*C0B3EFC0,1017,HPF,0.54Hz,15dB,fs/1,invert=0*/
+		{ 0x1018,	0x3F7FF680},		/*3F7FF680,1018,HPF,0.54Hz,15dB,fs/1,invert=0*/
+		{ 0x1019,	0x3ED1D880},		/*3ED1D880,1019,LBF,0.25Hz,0.61Hz,0dB,fs/1,invert=0*/
+		{ 0x101A,	0xBED1CFC0},		/*BED1CFC0,101A,LBF,0.25Hz,0.61Hz,0dB,fs/1,invert=0*/
+		{ 0x101B,	0x3F7FFB80},		/*3F7FFB80,101B,LBF,0.25Hz,0.61Hz,0dB,fs/1,invert=0*/
+		{ 0x101C,	0x00000000},		/*00000000,101C,Cutoff,invert=0*/
+		{ 0x101D,	0x3F800000},		/*3F800000,101D,0dB,invert=0*/
+		{ 0x101E,	0x3F800000},		/*3F800000,101E,0dB,invert=0*/
+		{ 0x1020,	0x3F800000},		/*3F800000,1020,0dB,invert=0*/
+		{ 0x1021,	0x3F800000},		/*3F800000,1021,0dB,invert=0*/
+		{ 0x1022,	0x3F800000},		/*3F800000,1022,0dB,invert=0*/
+		{ 0x1023,	0x3F800000},		/*3F800000,1023,Through,0dB,fs/1,invert=0*/
+		{ 0x1024,	0x00000000},		/*00000000,1024,Through,0dB,fs/1,invert=0*/
+		{ 0x1025,	0x00000000},		/*00000000,1025,Through,0dB,fs/1,invert=0*/
+		{ 0x1026,	0x00000000},		/*00000000,1026,Through,0dB,fs/1,invert=0*/
+		{ 0x1027,	0x00000000},		/*00000000,1027,Through,0dB,fs/1,invert=0*/
+		{ 0x1030,	0x3F800000},		/*3F800000,1030,Through,0dB,fs/1,invert=0*/
+		{ 0x1031,	0x00000000},		/*00000000,1031,Through,0dB,fs/1,invert=0*/
+		{ 0x1032,	0x00000000},		/*00000000,1032,Through,0dB,fs/1,invert=0*/
+		{ 0x1033,	0x3F800000},		/*3F800000,1033,Through,0dB,fs/1,invert=0*/
+		{ 0x1034,	0x00000000},		/*00000000,1034,Through,0dB,fs/1,invert=0*/
+		{ 0x1035,	0x00000000},		/*00000000,1035,Through,0dB,fs/1,invert=0*/
+		{ 0x1036,	0x3F800000},		/*3F800000,1036,Through,0dB,fs/1,invert=0*/
+		{ 0x1037,	0x00000000},		/*00000000,1037,Through,0dB,fs/1,invert=0*/
+		{ 0x1038,	0x00000000},		/*00000000,1038,Through,0dB,fs/1,invert=0*/
+		{ 0x1039,	0x3F800000},		/*3F800000,1039,Through,0dB,fs/1,invert=0*/
+		{ 0x103A,	0x00000000},		/*00000000,103A,Through,0dB,fs/1,invert=0*/
+		{ 0x103B,	0x00000000},		/*00000000,103B,Through,0dB,fs/1,invert=0*/
+		{ 0x103C,	0x3F800000},		/*3F800000,103C,Through,0dB,fs/1,invert=0*/
+		{ 0x103D,	0x00000000},		/*00000000,103D,Through,0dB,fs/1,invert=0*/
+		{ 0x103E,	0x00000000},		/*00000000,103E,Through,0dB,fs/1,invert=0*/
+		{ 0x1043,	0x39D2BD40},		/*39D2BD40,1043,LPF,3Hz,0dB,fs/1,invert=0*/
+		{ 0x1044,	0x39D2BD40},		/*39D2BD40,1044,LPF,3Hz,0dB,fs/1,invert=0*/
+		{ 0x1045,	0x3F7FCB40},		/*3F7FCB40,1045,LPF,3Hz,0dB,fs/1,invert=0*/
+		{ 0x1046,	0x388C8A40},		/*388C8A40,1046,LPF,0.5Hz,0dB,fs/1,invert=0*/
+		{ 0x1047,	0x388C8A40},		/*388C8A40,1047,LPF,0.5Hz,0dB,fs/1,invert=0*/
+		{ 0x1048,	0x3F7FF740},		/*3F7FF740,1048,LPF,0.5Hz,0dB,fs/1,invert=0*/
+		{ 0x1049,	0x390C87C0},		/*390C87C0,1049,LPF,1Hz,0dB,fs/1,invert=0*/
+		{ 0x104A,	0x390C87C0},		/*390C87C0,104A,LPF,1Hz,0dB,fs/1,invert=0*/
+		{ 0x104B,	0x3F7FEE80},		/*3F7FEE80,104B,LPF,1Hz,0dB,fs/1,invert=0*/
+		{ 0x104C,	0x398C8300},		/*398C8300,104C,LPF,2Hz,0dB,fs/1,invert=0*/
+		{ 0x104D,	0x398C8300},		/*398C8300,104D,LPF,2Hz,0dB,fs/1,invert=0*/
+		{ 0x104E,	0x3F7FDCC0},		/*3F7FDCC0,104E,LPF,2Hz,0dB,fs/1,invert=0*/
+		{ 0x1053,	0x3F800000},		/*3F800000,1053,Through,0dB,fs/1,invert=0*/
+		{ 0x1054,	0x00000000},		/*00000000,1054,Through,0dB,fs/1,invert=0*/
+		{ 0x1055,	0x00000000},		/*00000000,1055,Through,0dB,fs/1,invert=0*/
+		{ 0x1056,	0x3F800000},		/*3F800000,1056,Through,0dB,fs/1,invert=0*/
+		{ 0x1057,	0x00000000},		/*00000000,1057,Through,0dB,fs/1,invert=0*/
+		{ 0x1058,	0x00000000},		/*00000000,1058,Through,0dB,fs/1,invert=0*/
+		{ 0x1059,	0x3F800000},		/*3F800000,1059,Through,0dB,fs/1,invert=0*/
+		{ 0x105A,	0x00000000},		/*00000000,105A,Through,0dB,fs/1,invert=0*/
+		{ 0x105B,	0x00000000},		/*00000000,105B,Through,0dB,fs/1,invert=0*/
+		{ 0x105C,	0x3F800000},		/*3F800000,105C,Through,0dB,fs/1,invert=0*/
+		{ 0x105D,	0x00000000},		/*00000000,105D,Through,0dB,fs/1,invert=0*/
+		{ 0x105E,	0x00000000},		/*00000000,105E,Through,0dB,fs/1,invert=0*/
+		{ 0x1063,	0x3F800000},		/*3F800000,1063,0dB,invert=0*/
+		{ 0x1066,	0x3F800000},		/*3F800000,1066,0dB,invert=0*/
+		{ 0x1069,	0x3F800000},		/*3F800000,1069,0dB,invert=0*/
+		{ 0x106C,	0x3F800000},		/*3F800000,106C,0dB,invert=0*/
+		{ 0x1073,	0x00000000},		/*00000000,1073,Cutoff,invert=0*/
+		{ 0x1076,	0x3F800000},		/*3F800000,1076,0dB,invert=0*/
+		{ 0x1079,	0x3F800000},		/*3F800000,1079,0dB,invert=0*/
+		{ 0x107C,	0x3F800000},		/*3F800000,107C,0dB,invert=0*/
+		{ 0x1083,	0x38D1B700},		/*38D1B700,1083,-80dB,invert=0*/
+		{ 0x1086,	0x00000000},		/*00000000,1086,Cutoff,invert=0*/
+		{ 0x1089,	0x00000000},		/*00000000,1089,Cutoff,invert=0*/
+		{ 0x108C,	0x00000000},		/*00000000,108C,Cutoff,invert=0*/
+		{ 0x1093,	0x00000000},		/*00000000,1093,Cutoff,invert=0*/
+		{ 0x1098,	0x3F800000},		/*3F800000,1098,0dB,invert=0*/
+		{ 0x1099,	0x3F800000},		/*3F800000,1099,0dB,invert=0*/
+		{ 0x109A,	0x3F800000},		/*3F800000,109A,0dB,invert=0*/
+		{ 0x10A1,	0x3C58B440},		/*3C58B440,10A1,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A2,	0x3C58B440},		/*3C58B440,10A2,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A3,	0x3F793A40},		/*3F793A40,10A3,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A4,	0x3C58B440},		/*3C58B440,10A4,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A5,	0x3C58B440},		/*3C58B440,10A5,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A6,	0x3F793A40},		/*3F793A40,10A6,LPF,100Hz,0dB,fs/1,invert=0*/
+		{ 0x10A7,	0x3F800000},		/*3F800000,10A7,Through,0dB,fs/1,invert=0*/
+		{ 0x10A8,	0x00000000},		/*00000000,10A8,Through,0dB,fs/1,invert=0*/
+		{ 0x10A9,	0x00000000},		/*00000000,10A9,Through,0dB,fs/1,invert=0*/
+		{ 0x10AA,	0x00000000},		/*00000000,10AA,Cutoff,invert=0*/
+		{ 0x10AB,	0x3BDA2580},		/*3BDA2580,10AB,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10AC,	0x3BDA2580},		/*3BDA2580,10AC,LPF,50Hz,0dB,fs/1,invert=0*/
+		{ 0x10AD,	0x3F7C9780},		/*3F7C9780,10AD,LPF,50Hz,0dB,fs/1,invert=0*/
+
+		{ 0x10B0,	0x3F800000},		/*3F800000,10B0,Through,0dB,fs/1,invert=0*/
+		{ 0x10B1,	0x00000000},		/*00000000,10B1,Through,0dB,fs/1,invert=0*/
+		{ 0x10B2,	0x00000000},		/*00000000,10B2,Through,0dB,fs/1,invert=0*/
+		{ 0x10B3,	0x3F800000},		/*3F800000,10B3,0dB,invert=0*/
+		{ 0x10B4,	0x00000000},		/*00000000,10B4,Cutoff,invert=0*/
+		{ 0x10B5,	0x00000000},		/*00000000,10B5,Cutoff,invert=0*/
+		{ 0x10B6,	0x3F353C00},		/*3F353C00,10B6,-3dB,invert=0*/
+		{ 0x10B8,	0x3F800000},		/*3F800000,10B8,0dB,invert=0*/
+		{ 0x10B9,	0x00000000},		/*00000000,10B9,Cutoff,invert=0*/
+		{ 0x10C0,	0x3FD13600},		/*3FD13600,10C0,HBF,40Hz,700Hz,5dB,fs/1,invert=0*/
+		{ 0x10C1,	0xBFCEFAC0},		/*BFCEFAC0,10C1,HBF,40Hz,700Hz,5dB,fs/1,invert=0*/
+		{ 0x10C2,	0x3F5414C0},		/*3F5414C0,10C2,HBF,40Hz,700Hz,5dB,fs/1,invert=0*/
+		{ 0x10C3,	0x3F800000},		/*3F800000,10C3,Through,0dB,fs/1,invert=0*/
+		{ 0x10C4,	0x00000000},		/*00000000,10C4,Through,0dB,fs/1,invert=0*/
+		{ 0x10C5,	0x00000000},		/*00000000,10C5,Through,0dB,fs/1,invert=0*/
+		{ 0x10C6,	0x3D506F00},		/*3D506F00,10C6,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x10C7,	0x3D506F00},		/*3D506F00,10C7,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x10C8,	0x3F65F240},		/*3F65F240,10C8,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x10C9,	0x3C765F40},		/*3C765F40,10C9,LPF,1Hz,41dB,fs/1,invert=0*/
+		{ 0x10CA,	0x3C765F40},		/*3C765F40,10CA,LPF,1Hz,41dB,fs/1,invert=0*/
+		{ 0x10CB,	0x3F7FEE80},		/*3F7FEE80,10CB,LPF,1Hz,41dB,fs/1,invert=0*/
+		{ 0x10CC,	0x3DDA0F40},		/*3DDA0F40,10CC,LBF,8Hz,30Hz,-8dB,fs/1,invert=0*/
+		{ 0x10CD,	0xBDD85040},		/*BDD85040,10CD,LBF,8Hz,30Hz,-8dB,fs/1,invert=0*/
+		{ 0x10CE,	0x3F7F7380},		/*3F7F7380,10CE,LBF,8Hz,30Hz,-8dB,fs/1,invert=0*/
+		{ 0x10D0,	0x3FFF64C0},		/*3FFF64C0,10D0,6dB,invert=0*/
+		{ 0x10D1,	0x00000000},		/*00000000,10D1,Cutoff,invert=0*/
+		{ 0x10D2,	0x3F800000},		/*3F800000,10D2,0dB,invert=0*/
+		{ 0x10D3,	0x3F004DC0},		/*3F004DC0,10D3,-6dB,invert=0*/
+		{ 0x10D4,	0x3F800000},		/*3F800000,10D4,0dB,invert=0*/
+		{ 0x10D5,	0x3F800000},		/*3F800000,10D5,0dB,invert=0*/
+		{ 0x10D7,	0x41FCFB80},		/*41FCFB80,10D7,Through,30dB,fs/1,invert=0*/
+		{ 0x10D8,	0x00000000},		/*00000000,10D8,Through,30dB,fs/1,invert=0*/
+		{ 0x10D9,	0x00000000},		/*00000000,10D9,Through,30dB,fs/1,invert=0*/
+		{ 0x10DA,	0x3F71CBC0},		/*3F71CBC0,10DA,PKF,950Hz,-6dB,3,fs/1,invert=0*/
+		{ 0x10DB,	0xBFDC4380},		/*BFDC4380,10DB,PKF,950Hz,-6dB,3,fs/1,invert=0*/
+		{ 0x10DC,	0x3FDC4380},		/*3FDC4380,10DC,PKF,950Hz,-6dB,3,fs/1,invert=0*/
+		{ 0x10DD,	0x3F554080},		/*3F554080,10DD,PKF,950Hz,-6dB,3,fs/1,invert=0*/
+		{ 0x10DE,	0xBF470C40},		/*BF470C40,10DE,PKF,950Hz,-6dB,3,fs/1,invert=0*/
+		{ 0x10E0,	0x3DC65740},		/*3DC65740,10E0,LPF,800Hz,0dB,fs/1,invert=0*/
+		{ 0x10E1,	0x3DC65740},		/*3DC65740,10E1,LPF,800Hz,0dB,fs/1,invert=0*/
+		{ 0x10E2,	0x3F4E6A40},		/*3F4E6A40,10E2,LPF,800Hz,0dB,fs/1,invert=0*/
+		{ 0x10E3,	0x00000000},		/*00000000,10E3,LPF,800Hz,0dB,fs/1,invert=0*/
+		{ 0x10E4,	0x00000000},		/*00000000,10E4,LPF,800Hz,0dB,fs/1,invert=0*/
+		{ 0x10E5,	0x3F800000},		/*3F800000,10E5,0dB,invert=0*/
+		{ 0x10E8,	0x3F800000},		/*3F800000,10E8,0dB,invert=0*/
+		{ 0x10E9,	0x00000000},		/*00000000,10E9,Cutoff,invert=0*/
+		{ 0x10EA,	0x00000000},		/*00000000,10EA,Cutoff,invert=0*/
+		{ 0x10EB,	0x00000000},		/*00000000,10EB,Cutoff,invert=0*/
+		{ 0x10F0,	0x3F800000},		/*3F800000,10F0,Through,0dB,fs/1,invert=0*/
+		{ 0x10F1,	0x00000000},		/*00000000,10F1,Through,0dB,fs/1,invert=0*/
+		{ 0x10F2,	0x00000000},		/*00000000,10F2,Through,0dB,fs/1,invert=0*/
+		{ 0x10F3,	0x00000000},		/*00000000,10F3,Through,0dB,fs/1,invert=0*/
+		{ 0x10F4,	0x00000000},		/*00000000,10F4,Through,0dB,fs/1,invert=0*/
+		{ 0x10F5,	0x3F800000},		/*3F800000,10F5,Through,0dB,fs/1,invert=0*/
+		{ 0x10F6,	0x00000000},		/*00000000,10F6,Through,0dB,fs/1,invert=0*/
+		{ 0x10F7,	0x00000000},		/*00000000,10F7,Through,0dB,fs/1,invert=0*/
+		{ 0x10F8,	0x00000000},		/*00000000,10F8,Through,0dB,fs/1,invert=0*/
+		{ 0x10F9,	0x00000000},		/*00000000,10F9,Through,0dB,fs/1,invert=0*/
+		
+		{ 0x1200,	0x00000000},		/*00000000,1200,Cutoff,invert=0*/
+		{ 0x1201,	0x3F800000},		/*3F800000,1201,0dB,invert=0*/
+		{ 0x1202,	0x3F800000},		/*3F800000,1202,0dB,invert=0*/
+		{ 0x1203,	0x3F800000},		/*3F800000,1203,0dB,invert=0*/
+		{ 0x1204,	0x410E08C0},		/*410E08C0,1204,HBF,50Hz,1000Hz,20dB,fs/1,invert=0*/
+		{ 0x1205,	0xC10C24C0},		/*C10C24C0,1205,HBF,50Hz,1000Hz,20dB,fs/1,invert=0*/
+		{ 0x1206,	0x3F437BC0},		/*3F437BC0,1206,HBF,50Hz,1000Hz,20dB,fs/1,invert=0*/
+		{ 0x1207,	0x3DF21080},		/*3DF21080,1207,LPF,1000Hz,0dB,fs/1,invert=0*/
+		{ 0x1208,	0x3DF21080},		/*3DF21080,1208,LPF,1000Hz,0dB,fs/1,invert=0*/
+		{ 0x1209,	0x3F437BC0},		/*3F437BC0,1209,LPF,1000Hz,0dB,fs/1,invert=0*/
+		{ 0x120A,	0x3D506F00},		/*3D506F00,120A,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x120B,	0x3D506F00},		/*3D506F00,120B,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x120C,	0x3F65F240},		/*3F65F240,120C,LPF,400Hz,0dB,fs/1,invert=0*/
+		{ 0x120D,	0x3E653EC0},		/*3E653EC0,120D,DI,-13dB,fs/16,invert=0*/
+		{ 0x120E,	0x00000000},		/*00000000,120E,DI,-13dB,fs/16,invert=0*/
+		{ 0x120F,	0x3F800000},		/*3F800000,120F,DI,-13dB,fs/16,invert=0*/
+		{ 0x1210,	0x3EE2AC00},		/*3EE2AC00,1210,LBF,10Hz,32Hz,3dB,fs/1,invert=0*/
+		{ 0x1211,	0xBEE0BC40},		/*BEE0BC40,1211,LBF,10Hz,32Hz,3dB,fs/1,invert=0*/
+		{ 0x1212,	0x3F7F5080},		/*3F7F5080,1212,LBF,10Hz,32Hz,3dB,fs/1,invert=0*/
+		{ 0x1213,	0x3FFF64C0},		/*3FFF64C0,1213,6dB,invert=0*/
+		{ 0x1214,	0x00000000},		/*00000000,1214,Cutoff,invert=0*/
+		{ 0x1215,	0x40346080},		/*40346080,1215,9dB,invert=0*/
+		{ 0x1216,	0x3F004DC0},		/*3F004DC0,1216,-6dB,invert=0*/
+		{ 0x1217,	0x3F800000},		/*3F800000,1217,0dB,invert=0*/
+		{ 0x1218,	0x3F800000},		/*3F800000,1218,Through,0dB,fs/1,invert=0*/
+		{ 0x1219,	0x00000000},		/*00000000,1219,Through,0dB,fs/1,invert=0*/
+		{ 0x121A,	0x00000000},		/*00000000,121A,Through,0dB,fs/1,invert=0*/
+		{ 0x121B,	0x00000000},		/*00000000,121B,Through,0dB,fs/1,invert=0*/
+		{ 0x121C,	0x00000000},		/*00000000,121C,Through,0dB,fs/1,invert=0*/
+		{ 0x121D,	0x3F800000},		/*3F800000,121D,0dB,invert=0*/
+		{ 0x121E,	0x3F800000},		/*3F800000,121E,0dB,invert=0*/
+		{ 0x121F,	0x3F800000},		/*3F800000,121F,0dB,invert=0*/
+		{ 0x1235,	0x3F800000},		/*3F800000,1235,0dB,invert=0*/
+		{ 0x1236,	0x3F800000},		/*3F800000,1236,0dB,invert=0*/
+		{ 0x1237,	0x3F800000},		/*3F800000,1237,0dB,invert=0*/
+		{ 0x1238,	0x3F800000},		/*3F800000,1238,0dB,invert=0*/
+		{ 0xFFFF,	0xFFFFFFFF}
+	
+} ;
 
 // DI Coefficient Setting Value
 #define		COEFTBL	7
@@ -548,6 +900,8 @@ int	VerInf( void )
 	/* Matching Version -> Filter */
 	if( UcVerLow == 0xA0 ){					// 0xA0 5th MTM Act.
 		UcVerLow = 0xA0 ;
+	}else if( UcVerLow == 0xA1 ){			// 0xA1 5th LGIT Act.
+		UcVerLow = 0xA1 ;
 	}else{
 		return OIS_FW_POLLING_VERSION_FAIL;
 	};
@@ -827,8 +1181,6 @@ void	IniSrv( void )
 	RegWriteA( STBB0, UcStbb0 ) ;					// 0x0250	OIS standby
 	
 }
-
-
 
 //********************************************************************************
 // Function Name 	: IniGyr
@@ -1341,16 +1693,21 @@ int	IniFil( void )
 	// Filter Register Parameter Setting
 	UsAryId	= 0 ;
 	
-	if ( UcVerLow == 0xA0 ){
+	if ( UcVerLow == 0xA0 ){		// 5th  MTM-ACT
 		pFilReg = (struct STFILREG *)CsFilReg_C013;
 		pFilRam = (struct STFILRAM *)CsFilRam_C013;
+	}else if( UcVerLow == 0xA1 ){	// 5th LGIT-ACT
+		pFilReg = (struct STFILREG *)CsFilReg_C003;
+		pFilRam = (struct STFILRAM *)CsFilRam_C003;
 	}else{
 		return OIS_FW_POLLING_FAIL;
 	}
 	
   #ifdef	CATCHMODE
-	if( UcVerLow == 0xA0 ){
+	if( UcVerLow == 0xA0 ){			// 5th  MTM-ACT
 		pFilRamG = (struct STFILRAM *)CsFilRam_C01X_G;
+	}else if( UcVerLow == 0xA1 ){	// 5th LGIT-ACT
+		pFilRamG = (struct STFILRAM *)CsFilRam_C00X_G;
 	}else{
 		return OIS_FW_POLLING_FAIL;
 	}
@@ -1426,19 +1783,28 @@ void	IniAdj( void )
 #endif // CATCHMODE
 	
 	IniPtAve( ) ;								// Average setting
-	/* OIS */	
-	RegWriteA( CMSDAC0, BIAS_CUR_OIS_A0A0 ) ;		// 0x0251	Hall DAC Current
-	RegWriteA( OPGSEL0, AMP_GAIN_X_A0A0 ) ;			// 0x0253	Hall amp Gain X
-	RegWriteA( OPGSEL1, AMP_GAIN_Y_A0A0 ) ;			// 0x0254	Hall amp Gain Y	
 
-	/* AF */
-	RegWriteA( CMSDAC1, BIAS_CUR_AF_A0A0 ) ;		// 0x0252	Hall Dac current
-	RegWriteA( OPGSEL2, AMP_GAIN_AF_A0A0 ) ;		// 0x0255	Hall amp Gain AF
+	if( UcVerLow == 0xA0 ){					// 0xA0 5th MTM Act.
+		/* OIS */	
+		RegWriteA( CMSDAC0, BIAS_CUR_OIS_MTM ) ;	// 0x0251	Hall DAC Current
+		RegWriteA( OPGSEL0, AMP_GAIN_X_MTM ) ;		// 0x0253	Hall amp Gain X
+		RegWriteA( OPGSEL1, AMP_GAIN_Y_MTM ) ;		// 0x0254	Hall amp Gain Y	
+		/* AF */
+		RegWriteA( CMSDAC1, BIAS_CUR_AF_MTM ) ;		// 0x0252	Hall Dac current
+		RegWriteA( OPGSEL2, AMP_GAIN_AF_MTM ) ;		// 0x0255	Hall amp Gain AF
+	}else{	// UcVerLow == 0xA1				// 0xA1 5th LGIT Act.
+		/* OIS */	
+		RegWriteA( CMSDAC0, BIAS_CUR_OIS_LGIT ) ;	// 0x0251	Hall DAC Current
+		RegWriteA( OPGSEL0, AMP_GAIN_X_LGIT ) ;		// 0x0253	Hall amp Gain X
+		RegWriteA( OPGSEL1, AMP_GAIN_Y_LGIT ) ;		// 0x0254	Hall amp Gain Y	
+		/* AF */
+		RegWriteA( CMSDAC1, BIAS_CUR_AF_LGIT ) ;	// 0x0252	Hall Dac current
+		RegWriteA( OPGSEL2, AMP_GAIN_AF_LGIT ) ;	// 0x0255	Hall amp Gain AF
+	}
 
 	/* OSC Clock value */
 	if( ((unsigned char)StCalDat.UcOscVal == 0x00) || ((unsigned char)StCalDat.UcOscVal == 0xFF) ){
 		RegWriteA( OSCSET, OSC_INI ) ;				// 0x0257	OSC ini
-		//CdebugOutDialog("1[[OSC Default]]");
 	}else{
 		RegWriteA( OSCSET, StCalDat.UcOscVal ) ;	// 0x0257
 	}
@@ -1448,7 +1814,6 @@ void	IniAdj( void )
 	if( ( StCalDat.StGvcOff.UsGxoVal == 0x0000 ) || ( StCalDat.StGvcOff.UsGxoVal == 0xFFFF )){
 		RegWriteA( IZAH,	DGYRO_OFST_XH ) ;		// 0x02A0		Set Offset High byte
 		RegWriteA( IZAL,	DGYRO_OFST_XL ) ;		// 0x02A1		Set Offset Low byte
-		//CdebugOutDialog("2[[GX OFFSET Default]]");
 	}else{
 		RegWriteA( IZAH, (unsigned char)(StCalDat.StGvcOff.UsGxoVal >> 8) ) ;	// 0x02A0		Set Offset High byte
 		RegWriteA( IZAL, (unsigned char)(StCalDat.StGvcOff.UsGxoVal) ) ;		// 0x02A1		Set Offset Low byte
@@ -1457,7 +1822,6 @@ void	IniAdj( void )
 	if( ( StCalDat.StGvcOff.UsGyoVal == 0x0000 ) || ( StCalDat.StGvcOff.UsGyoVal == 0xFFFF )){
 		RegWriteA( IZBH,	DGYRO_OFST_YH ) ;		// 0x02A2		Set Offset High byte
 		RegWriteA( IZBL,	DGYRO_OFST_YL ) ;		// 0x02A3		Set Offset Low byte
-		//CdebugOutDialog("3[[GY OFFSET Default]]");
 	}else{
 		RegWriteA( IZBH, (unsigned char)(StCalDat.StGvcOff.UsGyoVal >> 8) ) ;	// 0x02A2		Set Offset High byte
 		RegWriteA( IZBL, (unsigned char)(StCalDat.StGvcOff.UsGyoVal) ) ;		// 0x02A3		Set Offset Low byte
@@ -1471,7 +1835,6 @@ void	IniAdj( void )
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjHallF == 0xFFFF ) || (StCalDat.UsAdjHallF & ( EXE_HXADJ - EXE_END )) ){
 		RamWriteA( DAXHLO,		DAHLXO_INI ) ;				// 0x1479
 		RamWriteA( DAXHLB,		DAHLXB_INI ) ;				// 0x147A
-		//CdebugOutDialog("4[[HX B/O Default]]");
 	}else{
 		RamWriteA( DAXHLO, StCalDat.StHalAdj.UsHlxOff ) ;	// 0x1479
 		RamWriteA( DAXHLB, StCalDat.StHalAdj.UsHlxGan ) ;	// 0x147A
@@ -1481,7 +1844,6 @@ void	IniAdj( void )
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjHallF == 0xFFFF ) || (StCalDat.UsAdjHallF & ( EXE_HYADJ - EXE_END )) ){
 		RamWriteA( DAYHLO,		DAHLYO_INI ) ;				// 0x14F9
 		RamWriteA( DAYHLB,		DAHLYB_INI ) ;				// 0x14FA
-		//CdebugOutDialog("5[[HY B/O Default]]");
 	}else{
 		RamWriteA( DAYHLO, StCalDat.StHalAdj.UsHlyOff ) ;	// 0x14F9
 		RamWriteA( DAYHLB, StCalDat.StHalAdj.UsHlyGan ) ;	// 0x14FA
@@ -1490,7 +1852,6 @@ void	IniAdj( void )
 	/* Hall X axis Loop Gain */
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjHallF == 0xFFFF ) || (StCalDat.UsAdjHallF & ( EXE_LXADJ - EXE_END )) ){
 		RamWriteA( sxg,			SXGAIN_INI ) ;			// 0x10D3
-		//CdebugOutDialog("6[[HX LP Default]]");
 	}else{
 		RamWriteA( sxg, StCalDat.StLopGan.UsLxgVal ) ;	// 0x10D3
 	}
@@ -1498,7 +1859,6 @@ void	IniAdj( void )
 	/* Hall Y axis Loop Gain */
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjHallF == 0xFFFF ) || (StCalDat.UsAdjHallF & ( EXE_LYADJ - EXE_END )) ){
 		RamWriteA( syg,			SYGAIN_INI ) ;			// 0x11D3
-		//CdebugOutDialog("7[[HY LP Default]]");
 	}else{
 		RamWriteA( syg, StCalDat.StLopGan.UsLygVal ) ;	// 0x11D3
 	}
@@ -1510,7 +1870,6 @@ void	IniAdj( void )
 		RamWriteA( OFF4Z,		AFOFF4Z_INI ) ;		// 0x145F
 		RamWriteA( OFF6Z,		AFOFF6Z_INI ) ;		// 0x1510
 		SetDOFSTDAF( AFDROF_INI );					// 0x0084
-		//CdebugOutDialog("8[[HZ B/O Default]]");
 	}else{
 		RamWriteA( DAZHLO,	StCalDat.StHalAdj.UsHlzOff ) ;		// 0x1529
 		RamWriteA( DAZHLB,	StCalDat.StHalAdj.UsHlzGan ) ;		// 0x152A
@@ -1521,7 +1880,6 @@ void	IniAdj( void )
 
 	if( (StCalDat.UsAdjHallZF == 0x0000 ) || (StCalDat.UsAdjHallZF == 0xFFFF ) || (StCalDat.UsAdjHallF & ( EXE_LZADJ - EXE_END )) ){
 		RamWriteA( afg,			SZGAIN_INI ) ;		// 0x1216
-		//CdebugOutDialog("9[[HZ LP Default]]");
 	}else{
 		RamWriteA( afg, StCalDat.StLopGan.UsLzgVal ) ;	// 0x1216
 	}
@@ -1532,7 +1890,6 @@ void	IniAdj( void )
 	/* Gyro X axis Gain */
 	if( ( StCalDat.UlGxgVal == 0x00000000 ) || ( StCalDat.UlGxgVal == 0xFFFFFFFF ) ){
 		RamWrite32A( gxzoom, GXGAIN_INI ) ;				// 0x1020 Gyro X axis Gain adjusted value
-		//CdebugOutDialog("10[[GX Gain Default]]");
 	}else{
 		RamWrite32A( gxzoom, StCalDat.UlGxgVal ) ;		// 0x1020 Gyro X axis Gain adjusted value
 	}
@@ -1540,7 +1897,6 @@ void	IniAdj( void )
 	/* Gyro Y axis Gain */
 	if( ( StCalDat.UlGygVal == 0x00000000 ) || ( StCalDat.UlGygVal == 0xFFFFFFFF ) ){
 		RamWrite32A( gyzoom, GYGAIN_INI ) ;				// 0x1120 Gyro Y axis Gain adjusted value
-		//CdebugOutDialog("11[[GY Gain Default]]");
 	}else{
 		RamWrite32A( gyzoom, StCalDat.UlGygVal ) ;		// 0x1120 Gyro Y axis Gain adjusted value
 	}
@@ -1548,31 +1904,34 @@ void	IniAdj( void )
 	RamAccFixMod( ON ) ;						// 16bit Fix mode
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjLensF == 0xFFFF ) || (StCalDat.UsAdjLensF & ( EXE_CXADJ - EXE_END )) ){
 		RamWriteA( OFF0Z,	HXOFF0Z_INI ) ;				// 0x1450
-		//CdebugOutDialog("12[[HX LC Default]]");
 	}else{
 		RamWriteA( OFF0Z, StCalDat.StLenCen.UsLsxVal ) ;	// 0x1450
 	}
 
 	if( (StCalDat.UsAdjHallF == 0x0000 ) || (StCalDat.UsAdjLensF == 0xFFFF ) || (StCalDat.UsAdjLensF & ( EXE_CYADJ - EXE_END )) ){
 		RamWriteA( OFF1Z,	HYOFF1Z_INI ) ;				// 0x14D0
-		//CdebugOutDialog("13[[HY LC Default]]");
 	}else{
 		RamWriteA( OFF1Z, StCalDat.StLenCen.UsLsyVal ) ;	// 0x14D0
 	}
 	RamAccFixMod( OFF ) ;						// 32bit Float mode
 
-	RamWrite32A( sxq, SXQ_INI_MTM ) ;			// 0x10E5	X axis output direction initial value
-	RamWrite32A( syq, SYQ_INI_MTM ) ;			// 0x11E5	Y axis output direction initial value
+	if( UcVerLow == 0xA0 ){					// 0xA0 5th MTM Act.
+		RamWrite32A( sxq, SXQ_INI_MTM ) ;			// 0x10E5	X axis output direction initial value
+		RamWrite32A( syq, SYQ_INI_MTM ) ;			// 0x11E5	Y axis output direction initial value
+	}else{	// UcVerLow == 0xA1				// 0xA1 5th LGIT Act.
+		RamWrite32A( sxq, SXQ_INI_LGIT ) ;			// 0x10E5	X axis output direction initial value
+		RamWrite32A( syq, SYQ_INI_LGIT ) ;			// 0x11E5	Y axis output direction initial value
+	}
 
 	RamWrite32A( afag, AFAG_INI ) ;				// 0x1203	CL-AF output direction initial value
 
 #ifdef	CATCHMODE
-	if( 0xA0 == UcVerHig ){
-		RamWrite32A( gx45g, G_45G_INI_A0A0 ) ;			// 0x1000
-		RamWrite32A( gy45g, G_45G_INI_A0A0 ) ;			// 0x1100
+	if( UcVerHig == 0xA0 ){
+		RamWrite32A( gx45g, G_45G_INI_IDG2030 ) ;		// 0x1000
+		RamWrite32A( gy45g, G_45G_INI_IDG2030 ) ;		// 0x1100
 	}else{	//( 0xA1 == UcVerHig )
-		RamWrite32A( gx45g, G_45G_INI_A1A0 ) ;			// 0x1000
-		RamWrite32A( gy45g, G_45G_INI_A1A0 ) ;			// 0x1100
+		RamWrite32A( gx45g, G_45G_INI_IDG2021 ) ;		// 0x1000
+		RamWrite32A( gy45g, G_45G_INI_IDG2021 ) ;		// 0x1100
 	}
 	ClrGyr( 0x00FF , CLR_FRAM1 );		// Gyro Delay RAM Clear
 #endif	//CATCHMODE
@@ -2970,11 +3329,6 @@ void AfSrvCurPos( void )
 	RamWriteA( AFSTMTGT	, UsRamDat ) ;	// 0x1513
 }
 
-void SetDOFSTDAF( unsigned char ucSetDat )
-{
-	RegWriteA( DRVFC4AF, (unsigned char)(ucSetDat << 3) );
-}
-
 //********************************************************************************
 // Function Name 	: SrvConAF
 // Return Value		: NON
@@ -3445,7 +3799,26 @@ unsigned short GetGyrTemp( void )
 	return ( UsTempOut );
 }
 
+//********************************************************************************
+// Function Name 	: SetDOFSTDAF
+// Retun Value		: NON
+// Argment Value	: NON
+// Explanation		: 
+// History			: First edition 						2014.07.11 T.Tokoro
+//********************************************************************************
+void	SetDOFSTDAF( unsigned char ucSetDat )
+{
+//	unsigned char ucRegDat;
 
+//	if( UcCvrCod == CVER122 ){
+//		RegReadA( DRVFC3AF, &ucRegDat );
+//		RegWriteA( DRVFC4AF, ( ucSetDat & 0x18 ) << 3 );					// 0x84
+//		RegWriteA( DRVFC3AF, ( ucRegDat & 0x70 ) | ( ucSetDat & 0x07 ) );	// 0x83
+//	}
+//	else{
+		RegWriteA( DRVFC4AF, (unsigned char)(ucSetDat << 3) );								// 0x84
+//	}
+}
 //==============================================================================
 // ois_init.c Code END
 //==============================================================================
