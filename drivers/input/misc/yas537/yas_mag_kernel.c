@@ -31,6 +31,9 @@
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
+#if defined(CONFIG_MACH_PM9X) && defined(CONFIG_CEI_HARDWARE_ID)
+#include <hwid/cei_hw_id.h>
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -798,6 +801,14 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		ret = -EFAULT;
 		goto error_remove_sysfs;
 	}
+
+#if defined(CONFIG_MACH_PM9X) && defined(CONFIG_CEI_HARDWARE_ID)
+	if (is_cei_dvt2_board()) {
+		ret = st->mag.set_position(7);
+		if (ret < 0)
+			pr_err("[Sensor] Unable to set DVT2 position\n");
+	}
+#endif
 	pr_info("[Sensor] %s , probe success, exit", __FUNCTION__ );
 	return 0;
 
