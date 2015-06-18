@@ -1155,6 +1155,7 @@
 	qcom,cool-fastchg-current-ma = <560>;
 	qcom,dc-psy-type = "Wipower";
 	qcom,dcin-vadc = <&pmi8994_vadc>;
+	qcom,thermal-mitigation = <1800 700 450 0>;
 	qcom,wipower-default-ilim-map = <4000000 20000000 550 700 300>;
 	qcom,wipower-pt-ilim-map = <4000000 7140000 550 700 300>,
 					<7140000 8140000 550 700 300>,
