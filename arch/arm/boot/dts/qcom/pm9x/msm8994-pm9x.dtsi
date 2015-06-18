@@ -1236,6 +1236,7 @@
 
 &pmi8994_wled {
 	qcom,led-strings-list = [00 01];
+	qcom,fs-curr-ua = <20000>;
 };
 
 &spi_0 {
