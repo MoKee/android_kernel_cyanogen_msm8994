@@ -25,11 +25,12 @@
 enum {
 	LSM6DS3_ACCEL = 0,
 	LSM6DS3_GYRO,
+	LSM6DS3_SENSORS_NUMB,
 	LSM6DS3_SIGN_MOTION,
 	LSM6DS3_STEP_COUNTER,
 	LSM6DS3_STEP_DETECTOR,
 	LSM6DS3_TILT,
-	LSM6DS3_SENSORS_NUMB,
+	LSM6DS3_SENSORS_NUMB2,
 };
 
 enum fifo_mode {
@@ -159,7 +160,13 @@ struct lsm6ds3_data {
 	s64 timestamp;
 	struct work_struct input_work;
 	struct device *dev;
+/* [PM99] S- BUG#577 Grace_Chang Improve sensorservice start up time */
+#ifdef ORG_VER
 	struct lsm6ds3_sensor_data sensors[LSM6DS3_SENSORS_NUMB];
+#else
+	struct lsm6ds3_sensor_data sensors[LSM6DS3_SENSORS_NUMB2];
+#endif
+/* [PM99] E- BUG#577 Grace_Chang Improve sensorservice start up time */
 
 	struct mutex bank_registers_lock;
 	struct mutex fifo_lock;

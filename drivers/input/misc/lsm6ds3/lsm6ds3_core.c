@@ -266,7 +266,13 @@ static int cei_store_offset_in_file(const char *filename, int offset[3], int dat
 static const struct lsm6ds3_sensor_name {
 	const char *name;
 	const char *description;
+/* [PM99] S- BUG#577 Grace_Chang Improve sensorservice start up time */
+#ifdef ORG_VER
 } lsm6ds3_sensor_name[LSM6DS3_SENSORS_NUMB] = {
+#else
+} lsm6ds3_sensor_name[LSM6DS3_SENSORS_NUMB2] = {
+#endif
+/* [PM99] E- BUG#577 Grace_Chang Improve sensorservice start up time */
 	[LSM6DS3_ACCEL] = {
 			.name = "accel",
 			.description = "ST LSM6DS3 Accelerometer Sensor",
