@@ -176,6 +176,11 @@ static const char *const auxpcm_rate_text[] = {"8000", "16000"};
 static const struct soc_enum msm8994_auxpcm_enum[] = {
 		SOC_ENUM_SINGLE_EXT(2, auxpcm_rate_text),
 };
+static const char *const quat_mi2s_clk_text[] = {"Off", "On"};
+
+struct snd_soc_card snd_soc_card_msm8994 = {
+	.name		= "msm8994-tomtom-snd-card",
+};
 
 static void *adsp_state_notifier;
 static void *def_codec_mbhc_cal(void);
@@ -1306,6 +1311,13 @@ static int tert_mi2s_bit_format_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int quat_mi2s_clk_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = atomic_read(&quat_mi2s_rsc_ref) == 1;
+	return 0;
+}
+
 static int msm_proxy_rx_ch_get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -2052,6 +2064,9 @@ static int msm8994_quat_mi2s_snd_startup(struct snd_pcm_substream *substream)
 		ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_CBS_CFS);
 		if (ret < 0) pr_err("%s: set fmt cpu dai failed, err:%d\n", __func__, ret);
 #endif
+		pr_info("%s Quaternary MI2S Clock is Enabled\n", __func__);
+		snd_ctl_notify(snd_soc_card_msm8994.snd_card, SNDRV_CTL_EVENT_MASK_VALUE,
+			&snd_soc_card_get_kcontrol(&snd_soc_card_msm8994, "QUAT_MI2S Clock")->id);
 	}
 
 
@@ -2082,7 +2097,9 @@ static void msm8994_quat_mi2s_snd_shutdown(struct snd_pcm_substream *substream)
 
 		ret = msm_reset_pinctrl(pinctrl_info, STATE_QUAT_MI2S_ACTIVE);
 		if (ret) pr_err("%s: Reset pinctrl failed with %d\n", __func__, ret);
-		pr_info("%s Quaternary MI2S Clock is Disabled", __func__);
+		pr_info("%s Quaternary MI2S Clock is Disabled\n", __func__);
+		snd_ctl_notify(snd_soc_card_msm8994.snd_card, SNDRV_CTL_EVENT_MASK_VALUE,
+			&snd_soc_card_get_kcontrol(&snd_soc_card_msm8994, "QUAT_MI2S Clock")->id);
 	}
 }
 
@@ -2254,6 +2271,7 @@ static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(8, proxy_rx_ch_text),
 	SOC_ENUM_SINGLE_EXT(3, hdmi_rx_sample_rate_text),
 	SOC_ENUM_SINGLE_EXT(2, vi_feed_ch_text),
+	SOC_ENUM_SINGLE_EXT(2, quat_mi2s_clk_text),
 };
 
 static const struct snd_kcontrol_new msm_snd_controls[] = {
@@ -2293,6 +2311,8 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			quat_mi2s_bit_format_get, quat_mi2s_bit_format_put),
 	SOC_ENUM_EXT("QUAT_MI2S SampleRate", msm_snd_enum[5],
 			quat_mi2s_sample_rate_get, quat_mi2s_sample_rate_put),
+	SOC_ENUM_EXT("QUAT_MI2S Clock", msm_snd_enum[9],
+			quat_mi2s_clk_get, NULL),
 };
 
 static bool msm8994_swap_gnd_mic(struct snd_soc_codec *codec)
@@ -3871,10 +3891,6 @@ static struct snd_soc_dai_link msm8994_hdmi_dai_link[] = {
 static struct snd_soc_dai_link msm8994_dai_links[
 					 ARRAY_SIZE(msm8994_common_dai_links) +
 					 ARRAY_SIZE(msm8994_hdmi_dai_link)];
-
-struct snd_soc_card snd_soc_card_msm8994 = {
-	.name		= "msm8994-tomtom-snd-card",
-};
 
 static int msm8994_populate_dai_link_component_of_node(
 					struct snd_soc_card *card)
