@@ -24,7 +24,8 @@
 *20150410  3rd version
 *  1. Change path to /sys/pres/link
 
-
+*20150625  4th version
+*  1. Avoid 10ms sampling rate I2C transfer fail
  */
 
 #define ALPS_PRS_DEBUG 0
@@ -115,6 +116,11 @@ struct hsppad_data {
 	//struct regulator *vi2c;
 	bool power_enabled;
 //jonny E
+	/* [PM99] S- BUG#564 Jonny_Chan avoid I2C fail */
+	int previous_prs;		/* ALPS modified 20150626 */
+	int previous_tmp;		/* ALPS modified 20150626 */
+	bool flag_previous;		/* ALPS modified 20150626 */
+	/* [PM99] E- BUG#564 Jonny_Chan avoid I2C fail */
 };
 
 /* SYSFS symbolic link */
@@ -393,10 +399,31 @@ static int hsppad_get_pressure_data(
 		HSPPAD_DATA_ACCESS_NUM);
 	if (err < 0)
 		return err;
-	pt[0] = (int) (((u16)sx[1] << 8) | (u16)sx[2]);
-	pt[1] = (int) (((u16)sx[3] << 8) | (u16)sx[4]);
-	dev_dbg(&hsppad->i2c->adapter->dev,
-		HSPPAD_LOG_TAG "prs:%d,tmp:%d\n", pt[0], pt[1]);
+	/* [PM99] S- BUG#564 Jonny_Chan avoid I2C fail */
+	if ((sx[0] & 0xFE) != 0x40) {
+		dev_dbg(&hsppad->i2c->adapter->dev,
+		HSPPAD_LOG_TAG "status bit error=0x%02X\n", sx[0]);
+
+		dev_dbg(&hsppad->i2c->adapter->dev,
+			HSPPAD_LOG_TAG "[ERROR ]prs:%d,tmp:%d\n", pt[0], pt[1]);
+		
+		if(hsppad->flag_previous) {
+			pt[0] = hsppad->previous_prs;
+			pt[1] = hsppad->previous_tmp;
+			return err;
+		} else {
+			return -1;
+		}
+	} else {
+		pt[0] = (int) (((u16)sx[1] << 8) | (u16)sx[2]);
+		pt[1] = (int) (((u16)sx[3] << 8) | (u16)sx[4]);
+		dev_dbg(&hsppad->i2c->adapter->dev,
+			HSPPAD_LOG_TAG "prs:%d,tmp:%d\n", pt[0], pt[1]);
+		hsppad->previous_prs = pt[0];
+		hsppad->previous_tmp = pt[1];
+		if(! hsppad->flag_previous) hsppad->flag_previous = true;
+	}
+	/* [PM99] E- BUG#564 Jonny_Chan avoid I2C fail */
 
 	return err;
 }
@@ -672,6 +699,7 @@ static int hsppad_resume(struct i2c_client *client)
 	if (hsppad->factive)
 		hsppad_measure_start(hsppad);
 	hsppad->fsuspend = false;
+	hsppad->flag_previous = false;		/* [PM99] BUG#564 Jonny_Chan avoid I2C fail ALPS modified 20150626 */
 	mutex_unlock(&hsppad->lock);
 	return 0;
 }
@@ -833,6 +861,7 @@ static int hsppad_probe(struct i2c_client *client,
 
 	hsppad->factive = false;
 	hsppad->fsuspend = false;
+	hsppad->flag_previous = false;		/* [PM99]BUG#564 Jonny_Chan avoid I2C fail ALPS modified 20150626 */
 	dev_info(&client->adapter->dev,
 		HSPPAD_LOG_TAG "detected %s pressure sensor\n",
 		HSPPAD_DRIVER_NAME);
