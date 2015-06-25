@@ -861,7 +861,7 @@ static int spidev_message(struct spidev_data *spidev,
     buf = spidev->buffer;
 
     // add silead 20150331
-    printk("spi buf = %02x %02x %02x %02x %02x %02x %02x %02x \n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]);
+    //printk("spi buf = %02x %02x %02x %02x %02x %02x %02x %02x \n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7]); // sileadinc 20150624
     // add silead end
 
     for (n = n_xfers, u_tmp = u_xfers; n; n--, u_tmp++) {
