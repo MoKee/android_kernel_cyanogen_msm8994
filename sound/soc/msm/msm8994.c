@@ -1314,7 +1314,7 @@ static int tert_mi2s_bit_format_put(struct snd_kcontrol *kcontrol,
 static int quat_mi2s_clk_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
-	ucontrol->value.integer.value[0] = atomic_read(&quat_mi2s_rsc_ref) == 1;
+	ucontrol->value.integer.value[0] = atomic_read(&quat_mi2s_rsc_ref) >= 1;
 	return 0;
 }
 
