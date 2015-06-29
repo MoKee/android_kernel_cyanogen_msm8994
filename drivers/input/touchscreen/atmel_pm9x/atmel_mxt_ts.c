@@ -370,6 +370,15 @@ static unsigned int tp_dynamic_log_level = TP_LOG_LEVEL_INFO;
 #define CEI_FW_CHECK_VERSION    0x22
 #define CEI_FW_CHECK_BUILD      0xAA
 
+/*
+ * Qualcomm L12/L14 workaround
+ *
+ * Regulator L12 and L14 need enable or disable
+ * in the same time, or L14 may continually be switched
+ * when device into pm suspend.
+ */
+#define QUALCOMM_L12_L14_WORKAROUND
+
 struct mxt_info {
 	u8 family_id;
 	u8 variant_id;
@@ -440,6 +449,9 @@ struct mxt_data {
 	bool use_regulator;
 	struct regulator *reg_vdd;
 	struct regulator *reg_avdd;
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+	struct regulator *reg_l12;
+#endif
 	char *fw_name;
 	char *cfg_name;
 #define ALT_CHIP_BIT_FW  (1<<8)
@@ -695,7 +707,7 @@ static bool mxt_object_readable(unsigned int type)
 
 static void mxt_dump_message(struct mxt_data *data, u8 *message)
 {
-	print_hex_dump(KERN_DEBUG, "MXT MSG:", DUMP_PREFIX_NONE, 16, 1,
+	print_hex_dump(KERN_DEBUG, "[atmel] MXT MSG:", DUMP_PREFIX_NONE, 16, 1,
 				message, data->T5_msg_size, false);
 }
 
@@ -4153,6 +4165,14 @@ static void mxt_regulator_enable(void * device)
 		return;
 	}
 
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+	error = regulator_enable(data->reg_l12);
+	if (error) {
+		TP_LOGE("Error %d cannot enable l12\n", error);
+		return;
+	}
+#endif
+
 	msleep(MXT_REGULATOR_DELAY);
 
 	INIT_COMPLETION(data->bl_completion);
@@ -4172,13 +4192,24 @@ static void mxt_regulator_disable(void * device)
 
 	regulator_disable(data->reg_vdd);
 	regulator_disable(data->reg_avdd);
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+	regulator_disable(data->reg_l12);
+#endif
 	gpio_set_value(data->pdata->gpio_reset, 0);
 }
 
-static void mxt_probe_regulators(struct mxt_data *data)
+static void mxt_probe_regulators(struct mxt_data *data, bool get)
 {
 	struct device *dev = &data->client->dev;
 	int error;
+
+	if (!get) {
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+		goto disable_l12;
+#else
+		goto disable_avdd;
+#endif
+	}
 
 	/*
 	 * According to maXTouch power sequencing specification, RESET line
@@ -4187,7 +4218,7 @@ static void mxt_probe_regulators(struct mxt_data *data)
 	 */
 
 	board_gpio_init(data->pdata);
-	if(atomic_read(&data->depth) > 0) {
+	if (atomic_read(&data->depth) > 0) {
 		board_disable_irq(data->pdata, data->irq);
 		atomic_dec(&data->depth);
 	}
@@ -4205,26 +4236,46 @@ static void mxt_probe_regulators(struct mxt_data *data)
 	}
 
 	data->reg_avdd = regulator_get(dev, "avdd");
-	if (IS_ERR(data->reg_vdd)) {
-		error = PTR_ERR(data->reg_vdd);
+	if (IS_ERR(data->reg_avdd)) {
+		error = PTR_ERR(data->reg_avdd);
 		TP_LOGE("Error %d getting avdd regulator\n", error);
-		goto fail_release;
+		goto disable_vdd;
 	}
 
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+	data->reg_l12 = regulator_get(dev, "l12");
+	if (IS_ERR(data->reg_l12)) {
+		error = PTR_ERR(data->reg_l12);
+		TP_LOGE("Error %d getting l12 regulator\n", error);
+		goto disable_avdd;
+	}
+#endif
+
 	//no need use regulator for suspend and resume, set false here
-	//data->use_regulator = false;
-	data->use_regulator = true; //FIXME
+	data->use_regulator = false;
 
 	mxt_regulator_enable(data);
 
 	TP_LOGI("Initialised regulators\n");
 	return;
 
-fail_release:
-	regulator_put(data->reg_vdd);
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+disable_l12:
+	if (data->reg_l12)
+		regulator_put(data->reg_l12);
+#endif
+disable_avdd:
+	if (data->reg_avdd)
+		regulator_put(data->reg_avdd);
+disable_vdd:
+	if (data->reg_vdd)
+		regulator_put(data->reg_vdd);
 fail:
 	data->reg_vdd = NULL;
 	data->reg_avdd = NULL;
+#ifdef QUALCOMM_L12_L14_WORKAROUND
+	data->reg_l12 = NULL;
+#endif
 	data->use_regulator = false;
 }
 
@@ -5747,7 +5798,7 @@ static struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	struct device_node *node = dev->of_node;
 	struct property *prop;	
-	u8 *num_keys;
+	u32 *num_keys;
 	unsigned int (*keymap)[MAX_KEYS_SUPPORTED_IN_DRIVER];
 	int proplen, ret;
 	char temp[255];
@@ -5804,22 +5855,25 @@ static struct mxt_platform_data *mxt_parse_dt(struct i2c_client *client)
 		}
 #if defined(CONFIG_DUMMY_PARSE_DTS)
 		num_keys[T15_T97_KEY] = 3;
-else
-		ret = of_property_read_u8_array(client->dev.of_node,
-				"gpio-keymap-num", num_keys, NUM_KEY_TYPE);
+#else
+		ret = of_property_read_u32_array(dev->of_node,
+				"atmel,gpio-keymap-num", num_keys, NUM_KEY_TYPE);
 		if (ret) {
 			TP_LOGE("Unable to read device tree key codes num keys: %d\n", ret);
-			devm_kfree(dev,num_keys);
-			devm_kfree(dev,keymap);
+			devm_kfree(dev, num_keys);
+			devm_kfree(dev, keymap);
 			return NULL;
 		}
 #endif
 		for (i = 0; i < NUM_KEY_TYPE; i++) {
 			sprintf(temp, "atmel,gpio-keymap_%d", i);
-			ret = of_property_read_u32_array(client->dev.of_node,
+			TP_LOGI("%s %d\n", temp, num_keys[i]);
+			ret = of_property_read_u32_array(dev->of_node,
 					temp, keymap[i], num_keys[i]);
 			if (ret) {
-				TP_LOGE("Unable to read device tree key codes: %d\n", ret);
+				TP_LOGI("Unable to read device tree key codes (%s): %d\n",
+						temp,
+						ret);
 				//return NULL;
 				num_keys[i] = 0;
 			} else {
@@ -5827,6 +5881,7 @@ else
 					num_keys[i] = MAX_KEYS_SUPPORTED_IN_DRIVER;
 			}
 		}
+
 #if defined(CONFIG_DUMMY_PARSE_DTS)
 		keymap[T15_T97_KEY][0] = KEY_MENU;
 		keymap[T15_T97_KEY][1] = KEY_HOMEPAGE;
@@ -5843,10 +5898,12 @@ else
 
 	if (pdata->num_keys) {
 		for (i = 0; i < NUM_KEY_TYPE; i++) {
-			TP_LOGI("mxt type %d (%d): ", i, pdata->num_keys[i]);
+			TP_LOGI("Keymap: type %d (%d):\n", i, pdata->num_keys[i]);
 
 			for (j = 0; j < pdata->num_keys[i]; j++) 
-				TP_LOGI("%d ", pdata->keymap[i][j]);
+				TP_LOGI("%d (0x%04X)\n",
+						pdata->keymap[i][j],
+						pdata->keymap[i][j]);
 
 			TP_LOGI("\n");
 		}
@@ -6135,7 +6192,7 @@ static int mxt_probe(struct i2c_client *client,
 	}
 #endif
 
-	mxt_probe_regulators(data);
+	mxt_probe_regulators(data, true);
 #if defined(CONFIG_MXT_EXTERNAL_TRIGGER_IRQ_WORKQUEUE) \
 	|| defined(CONFIG_MXT_REPORT_VIRTUAL_KEY_SLOT_NUM)
 	mxt_g_data = data;
@@ -6198,7 +6255,8 @@ err_free_irq:
 		data->properties_kobj = NULL;
 	}
 #endif
-	board_free_irq(data->pdata,data->irq, data);
+	mxt_probe_regulators(data, false);
+	board_free_irq(data->pdata, data->irq, data);
 #if defined(CONFIG_MXT_IRQ_WORKQUEUE)
 #if !defined(CONFIG_MXT_EXTERNAL_TRIGGER_IRQ_WORKQUEUE)
 err_free_irq_workqueue:	
@@ -6212,7 +6270,7 @@ err_free_pdata:
 	mxt_free_dt(data);
 #endif
 	if (!dev_get_platdata(&data->client->dev))
-		devm_kfree(&data->client->dev,data->pdata);
+		devm_kfree(&data->client->dev, data->pdata);
 err_free_mem:
 #if defined(CONFIG_MXT_I2C_DMA)	
 	dma_free_coherent(NULL, PAGE_SIZE * 2, data->i2c_dma_va, data->i2c_dma_pa);
@@ -6253,8 +6311,7 @@ static int mxt_remove(struct i2c_client *client)
 	mxt_g_data = NULL;
 #endif
 	board_gpio_deinit(data->pdata);
-	regulator_put(data->reg_avdd);
-	regulator_put(data->reg_vdd);
+	mxt_probe_regulators(data, false);
 	mxt_free_object_table(data);
 	mutex_destroy(&data->access_mutex);
 	mutex_destroy(&data->debug_msg_lock);

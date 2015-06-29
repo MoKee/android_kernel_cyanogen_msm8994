@@ -63,6 +63,15 @@ fixed some bugs
 #define PI_FLAG_MASK_FUNC			(0xff000)
 #define PI_FLAG_MASK				(-1)
 
+#define PI_GESTURE_T93_DOBULE_TAP	0x2
+#define PI_GESTURE_T116_RIGHT		0xa
+#define PI_GESTURE_T116_LEFT		0xb
+#define PI_GESTURE_T116_C		0x63
+#define PI_GESTURE_T116_M		0x6d
+#define PI_GESTURE_T116_O		0x6f
+#define PI_GESTURE_T116_V		0x76
+#define PI_GESTURE_T116_W		0x77
+
 /* Log */
 #define PI_LOG_TAG "atmel PI"
 
@@ -331,6 +340,7 @@ static int plugin_proci_pi_hook_t93(void *pi_id, u8 *msg,
 	PI_LOGI("mxt hook pi t93 0x%x\n", state);
 
 	if (state & 0x2 /*0x1*/) {  //540s: 0x1, T serial: 0x2
+		PI_LOGI("Gesture: Double Tap\n");
 		idx = 0;
 		PI_LOGI("T93 key index %d\n", idx);
 		clr_gesture_trace_buffer(p);
@@ -371,7 +381,7 @@ static int plugin_proci_pi_hook_t115(void *pi_id, u8 *msg, unsigned long pl_flag
 	int state = msg[1];
 	int idx = -EINVAL;
 
-	if (!test_flag(PL_FUNCTION_FLAG_WAKEUP_GESTURE,&pl_flag))
+	if (!test_flag(PL_FUNCTION_FLAG_WAKEUP_GESTURE, &pl_flag))
 		return -EINVAL;
 	
 	PI_LOGI("mxt hook pi t115 0x%x\n", state);
@@ -398,7 +408,7 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 	int state = msg[1];
 	int idx = -EINVAL;
 
-	if (!test_flag(PL_FUNCTION_FLAG_WAKEUP_GESTURE,&pl_flag))
+	if (!test_flag(PL_FUNCTION_FLAG_WAKEUP_GESTURE, &pl_flag))
 		return -EINVAL;
 	
 	PI_LOGI("mxt hook pi t116 0x%x\n", state);
@@ -408,11 +418,44 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 		elemment.tag = state;
 		cont = get_data_by_element(&cfg->gesture_list, &elemment);
 		if (cont) {
-			idx = 0;
+			switch (SUBNAME_GES(elemment.tag)) {
+			case PI_GESTURE_T116_C:
+				PI_LOGI("Gesture: C\n");
+				// NO USE
+				break;
+			case PI_GESTURE_T116_M:
+				PI_LOGI("Gesture: M\n");
+				// NO USE
+				break;
+			case PI_GESTURE_T116_O:
+				PI_LOGI("Gesture: O\n");
+				idx = 0;
+				break;
+			case PI_GESTURE_T116_V:
+				PI_LOGI("Gesture: V\n");
+				idx = 1;
+				break;
+			case PI_GESTURE_T116_W:
+				PI_LOGI("Gesture: W\n");
+				// NO USE
+				break;
+			case PI_GESTURE_T116_LEFT:
+				PI_LOGI("Gesture: Left slide\n");
+				idx = 2;
+				break;
+			case PI_GESTURE_T116_RIGHT:
+				PI_LOGI("Gesture: Right slide\n");
+				idx = 3;
+				break;
+			default:
+				PI_LOGW("Not support gesture\n");
+				break;
+			}
+
 			PI_LOGI("T116 key index %d\n", idx);
 			get_gesture_trace_data(p, state, obs->trace_buf);
 		} else {
-			PI_LOGI("Invalid T116 msg %d (%02X)\n", state,msg[2]);
+			PI_LOGI("Invalid T116 msg %d (%02X)\n", state, msg[2]);
 		}
 	}
 
@@ -491,7 +534,7 @@ static struct data_obj * get_data_by_element(struct list_head *head,
 	
 	list_for_each(node, head) {
 		cont = container_of(node, struct data_obj, node);
-		if(cont->rcfg.reg == elem->reg &&
+		if (cont->rcfg.reg == elem->reg &&
 			SUBNAME_GES(cont->rcfg.tag) == SUBNAME_GES(elem->tag))
 			break;
 	}
@@ -681,14 +724,15 @@ static int plugin_proci_pi_handle_gesture(struct plugin_proci *p,
 			op,
 			reset);
 
-	//update gesture register
+	/* update gesture register */
 	ghead = &cfg->gesture_list;
-	list_for_each(gnode,ghead) {
+	list_for_each(gnode, ghead) {
 
 		cont = container_of(gnode, struct data_obj, node);
 		gobj = container_of(cont, struct gesture_obj, data);
 		r = &cont->rcfg;
-		
+
+		/* if gesture is not set neither OP_SET or OP_CLR, skip it */
 		if (!test_flag(BIT_MASK(OP_SET), &r->flag) &&
 				!test_flag(BIT_MASK(OP_CLR), &r->flag))
 			continue;
@@ -696,10 +740,15 @@ static int plugin_proci_pi_handle_gesture(struct plugin_proci *p,
 		memcpy(&rcfg, r, sizeof(struct reg_config));
 		chead = &gobj->sublist;
 
-		//gesture register enable
+		/* gesture register enable */
 		if (test_flag(BIT_MASK(GES_ENABLE), &op)) {
-			if (test_flag(BIT_MASK(GES_CTRL_EN), &r->tag)) {  //has control bit
+			/*
+			 * Echo gestures need enable set GES_CTRL_EN bit if they want to
+			 * be controlled by user
+			 */
+			if (test_flag(BIT_MASK(GES_CTRL_EN), &r->tag)) {
 				op2 = 0;
+
 				if (test_flag(BIT_MASK(OP_SET), &op)) {
 					if (test_flag(BIT_MASK(OP_SET), &r->flag) ||
 							!test_flag(BIT_MASK(GES_ENABLE), &r->flag))
@@ -709,6 +758,7 @@ static int plugin_proci_pi_handle_gesture(struct plugin_proci *p,
 							!test_flag(BIT_MASK(GES_ENABLE), &r->flag))
 						op2 = op;
 				}
+
 				if (op2) {
 					if (test_flag(BIT_MASK(OP_CLR), &op2)) {
 						for (i = 0; i < rcfg.len; i++)
@@ -716,7 +766,7 @@ static int plugin_proci_pi_handle_gesture(struct plugin_proci *p,
 					}
 					
 					ret = p->set_obj_cfg(p->dev, &rcfg, NULL, 0);
-					//pi_debug_show_content(p, r, "handle gesture");
+					pi_debug_show_content(p, r, "handle gesture");
 					
 					if (ret == 0) {
 						if (test_flag(BIT_MASK(OP_SET), &op))
@@ -736,7 +786,7 @@ static int plugin_proci_pi_handle_gesture(struct plugin_proci *p,
 				}
 			}
 		} else {
-		//gesture sub type enable
+			/* gesture sub type enable */
 			if (!list_empty(chead) && 
 					(reset || !test_flag(BIT_MASK(GES_ENABLE), &r->flag))) {
 				list_for_each(cnode, chead) {
@@ -1649,6 +1699,7 @@ static struct reg_config mxt_dwakeup_cfg[] = {
 //note: All gesture should be default disabled
 
 static const struct ges_tab_element gesture_element_array[] = {
+#if 0 /* CEI not use */
 	{
 		MXT_PROCI_ONETOUCHGESTUREPROCESSOR_T24,
 		0,
@@ -1688,7 +1739,7 @@ static const struct ges_tab_element gesture_element_array[] = {
 	{
 		MXT_PROCI_SYMBOLGESTURE_T115,
 		0,
-		SLIDING_LEFT | BIT_MASK(GES_CTRL_EN)|BIT_MASK(GES_SWITCH),
+		SLIDING_LEFT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
 		"LEFT"
 	},
 	{
@@ -1709,6 +1760,26 @@ static const struct ges_tab_element gesture_element_array[] = {
 		SLIDING_DOWN | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
 		"DOWN"
 	},
+#else
+	{
+		MXT_PROCI_TOUCHSEQUENCELOGGER_T93,
+		0,
+		BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
+		"TAP"
+	},
+	{
+		MXT_SPT_SYMBOLGESTURECONFIG_T116,
+		0,
+		PI_GESTURE_T116_LEFT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
+		"LEFT"
+	},
+	{
+		MXT_SPT_SYMBOLGESTURECONFIG_T116,
+		0,
+		PI_GESTURE_T116_RIGHT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
+		"RIGHT"
+	},
+#endif
 	//MXT_SPT_SYMBOLGESTURECONFIG_T116,0,
 	{
 		MXT_PROCI_SYMBOLGESTURE_T115,
@@ -1716,8 +1787,14 @@ static const struct ges_tab_element gesture_element_array[] = {
 		SLIDING_AND_CHARACTER | BIT_MASK(GES_CTRL_EN),
 		"S_115_116"
 	},
-};  
+};
 
+/**
+ * check if any T115 and T116 gesture is enabled
+ *
+ * Search gesture in gesture_list, if one of them is set
+ * OP_SET and GES_SWITCH bit return true, otherwise false
+ */
 static bool check_t115_t116_enable(struct list_head *head)
 {
 	struct list_head *node;
@@ -1777,10 +1854,10 @@ ssize_t plugin_proci_pi_gesture_show(struct plugin_proci *p,
 				cont);
 		if (elem) {
 			offset += scnprintf(buf + offset, count - offset, "%s %02x;\n",
-					elem->name,val);
+					elem->name, val);
 		} else {
 			offset += scnprintf(buf + offset, count - offset, "%c %02x;\n",
-					SUBNAME_GES(cont->rcfg.tag),val);
+					SUBNAME_GES(cont->rcfg.tag), val);
 		}
 	}
 
@@ -1832,12 +1909,16 @@ int plugin_proci_pi_gesture_store(struct plugin_proci *p,
 			PI_LOGE("Bad element %s %x\n", buf, val);
 
 		if (len > 1) {
+			/*
+			 * If name length > 1, just search gesture_element_array
+			 * that is defined in code by name
+			 */
 			for (i = 0; i < ARRAY_SIZE(gesture_element_array); i++) {
 				elem = &gesture_element_array[i];
 
 				/* search gesture element array name */
 				if (strncmp(name, elem->name, MAX_GES_NAME_LEN) == 0) {
-					PI_LOGE("set element %s %lx\n", name, op);
+					PI_LOGI("set element %s %lx\n", name, op);
 
 					if (set_data_by_element(head, elem, op) != 0) {
 						PI_LOGE("Failed process element %s %x\n", buf, val);
@@ -1851,6 +1932,10 @@ int plugin_proci_pi_gesture_store(struct plugin_proci *p,
 				}
 			}
 		} else if (len == 1) {
+			/*
+			 * If name length is 1, it should be a symbol gesture and
+			 * search all gesture_list
+			 */
 			list_for_each(node, head) {
 				cont = container_of(node, struct data_obj, node);
 				if (!test_flag(BIT_MASK(GES_CTRL_EN), &cont->rcfg.tag) &&
@@ -1862,6 +1947,7 @@ int plugin_proci_pi_gesture_store(struct plugin_proci *p,
 						PI_LOGE("Failed process element %s %x\n", buf, val);
 						ret = -EINVAL;
 					}
+
 					if (test_flag(BIT_MASK(GES_SWITCH), &element.tag))
 						check_switch = true;
 					break;
@@ -1911,7 +1997,7 @@ ssize_t plugin_proci_pi_trace_show(struct plugin_proci *p,
 	if (strcnt > MAX_GESTURE_TRACE_STROKE)
 		strcnt = MAX_GESTURE_TRACE_STROKE;
 
-	print_hex_dump(KERN_INFO, "[mxt] trace: ", DUMP_PREFIX_NONE, 16, 1,
+	print_hex_dump(KERN_INFO, "[atmel] trace: ", DUMP_PREFIX_NONE, 16, 1,
 			t_buf, (strcnt << 2) + GESTURE_TRACE_STROKE_CNT_INDEX + 1, false);
 
 	offset = scnprintf(buf, count, "%02hhx,%02hhx;\n", 
@@ -2069,7 +2155,7 @@ static int plugin_proci_pi_store(struct plugin_proci *p,
 									if (k && ret > 0) {
 										print_trunk(rc.buf, 0, k);
 										print_hex_dump(KERN_INFO,
-												"[mxt]",
+												"[atmel]",
 												DUMP_PREFIX_NONE,
 												16, 1,
 												rc.buf, k, false);
@@ -2124,7 +2210,7 @@ static int plugin_proci_pi_store(struct plugin_proci *p,
 						}
 						if (k && ret > 0) {
 							print_trunk(rc.buf, 0, k);
-							print_hex_dump(KERN_INFO, "[mxt]",
+							print_hex_dump(KERN_INFO, "[atmel]",
 									DUMP_PREFIX_NONE,
 									16, 1,
 									rc.buf, k, false);
@@ -2149,7 +2235,7 @@ static int plugin_proci_pi_store(struct plugin_proci *p,
 					}
 				} else if (strncmp(name, "gesture", 7) == 0) {
 					memset(&element, 0 ,sizeof(element));
-					ret = sscanf(buf + offset, "T%hd %n", &element.reg,&ofs);
+					ret = sscanf(buf + offset, "T%hd %n", &element.reg, &ofs);
 					if (ret == 1) {
 						offset += ofs;
 						ret = sscanf(buf + offset, "%c %d", &ges, &val);
@@ -2193,6 +2279,9 @@ static void plugin_proci_pi_dynamic_log(u8 level)
 	pi_dynamic_log_level = level;
 }
 
+/**
+ * initialize gesture list
+ */
 static int init_gesture_list(struct plugin_proci *p)
 {
 	struct pi_config *cfg = p->cfg;
@@ -2207,6 +2296,7 @@ static int init_gesture_list(struct plugin_proci *p)
 	INIT_LIST_HEAD(&cfg->gesture_list);
 	memset(&rcfg, 0, sizeof(rcfg));
 
+	/* initialize gesture_element_array */
 	for (i = 0; i < ARRAY_SIZE(gesture_element_array); i++) {
 		rcfg.reg = gesture_element_array[i].reg;
 		rcfg.instance = gesture_element_array[i].instance;
@@ -2255,7 +2345,7 @@ static int init_gesture_list(struct plugin_proci *p)
 	rcfg.mask = 0;
 	do {
 		sym_cnt = 0;
-		ret = p->get_obj_cfg(p->dev, &rcfg,0);
+		ret = p->get_obj_cfg(p->dev, &rcfg, 0);
 		PI_LOGI("Read reg %d, offset %d, {%02x %02x %02x %02x} ret %d\n",
 				rcfg.reg,
 				rcfg.offset,
@@ -2270,10 +2360,13 @@ static int init_gesture_list(struct plugin_proci *p)
 				if (sym_cnt) {
 					if (sym_tag >= CHARACTER_ASCII_BEGIN) {
 						memset(&elemment, 0, sizeof(elemment));
+
 						elemment.reg = MXT_SPT_SYMBOLGESTURECONFIG_T116;
 						elemment.tag = sym_tag;
+
 						cont = get_data_by_element(&cfg->gesture_list, &elemment);
 						if (!cont) {
+							/* not in gesture_list, create a new gesture_obj */
 							gobj = (struct gesture_obj *)create_new_node(
 									&cfg->gesture_list,
 									sizeof(struct gesture_obj));
@@ -2283,15 +2376,19 @@ static int init_gesture_list(struct plugin_proci *p)
 								ret = -ENOMEM;
 								goto release;
 							}
+
 							memcpy(&gobj->data.rcfg, &rcfg, sizeof(struct reg_config));
+
 							gobj->data.rcfg.tag = sym_tag | BIT_MASK(GES_SWITCH);
 							gobj->data.rcfg.len = 0;
 							gobj->data.rcfg.buf[0] = 0;
 							gobj->data.rcfg.flag = BIT_MASK(OP_CLR);
+
 							INIT_LIST_HEAD(&gobj->sublist);
 						} else {
 							gobj = container_of(cont, struct gesture_obj, data);
 						}
+
 						cont = (struct data_obj *)create_new_node(
 								&gobj->sublist,
 								sizeof(struct data_obj));
@@ -2301,20 +2398,22 @@ static int init_gesture_list(struct plugin_proci *p)
 							ret = -ENOMEM;
 							goto release;
 						}
+
 						cont->rcfg.offset = rcfg.offset + 3;
 						cont->rcfg.len = 1;
 						cont->rcfg.mask = 0x80;
-						
+
 						gobj->data.rcfg.len++;
+
 						if (gobj->data.rcfg.len >= MAX_GESTURE_SUPPORTED_IN_T116)
 							break;
 					}
 				} else
 					break;
 		}
-		rcfg.offset += (4 + ((sym_cnt + 1)>>1));
+		rcfg.offset += (4 + ((sym_cnt + 1) >> 1));
 	} while (sym_cnt);
-	
+
 release:
 	return ret;
 }

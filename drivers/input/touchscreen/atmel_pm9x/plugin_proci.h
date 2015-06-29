@@ -12,13 +12,13 @@
 
 #define GESTURE_TRACE_STROKE_CNT_INDEX 2
 #define CHARACTER_ASCII_BEGIN 0x21
-enum{
+enum {
 	UNLOCK_0 = 0,
 	UNLOCK_1,
 	UNLOCK_NUM,
 };
 
-enum{
+enum {
 	SLIDING_LEFT = 0,
 	SLIDING_RIGHT,
 	SLIDING_UP,
@@ -26,7 +26,7 @@ enum{
 	SLIDING_NUM
 };
 
-enum{
+enum {
 	SLIDING_AND_CHARACTER = SLIDING_NUM,
 };
 
@@ -34,7 +34,7 @@ enum{
 
 #define SUBNAME_GES(x)	(char)((x) & 0x7F)
 
-enum{
+enum {
 	GES_CTRL_EN = 7,
 	GES_SWITCH = 8,
 };

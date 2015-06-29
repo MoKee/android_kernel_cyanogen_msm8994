@@ -1,3 +1,18 @@
+/*
+ * ATMEL Key map:
+ *   0: T15_T97_KEY
+ *   1: T19_KEY
+ *   2: T24_KEY
+ *   3: T42_KEY
+ *   4: T61_KEY
+ *   5: T81_KEY
+ *   6: T92_KEY
+ *   7: T93_KEY
+ *   8: T99_KEY
+ *   9: T115_KEY
+ *   10: T116_KEY
+ */
+
 &soc {
 	i2c@f9924000 {
 		status = "ok";
@@ -12,8 +27,16 @@
 			pinctrl-0 = <&atmel_default>;
 			vdd-supply = <&pm8994_l22>;
 			avdd-supply = <&pm8994_l14>;
+			/* L12/L14 workaround */
+			l12-supply = <&pm8994_l12>;
 			atmel,reset-gpio = <&msm_gpio 96 0x0>;
 			atmel,irq-gpio = <&msm_gpio 76 0x8>;
+			/* Numbers of each keymap keys (keymap_0 ~ keymap_10) */
+			atmel,gpio-keymap-num = <0 0 0 0 0 0 0 1 0 0 4>;
+			/* T93_KEY */
+			atmel,gpio-keymap_7 = <255>;
+			/* T116_KEY */
+			atmel,gpio-keymap_10 = <250 252 253 254>;
 		};
 	};
 };

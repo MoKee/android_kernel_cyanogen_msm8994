@@ -46,7 +46,7 @@ struct mxt_platform_data {
 	int t15_num_keys;
 	const unsigned int *t15_keymap;
 */
-	const u8 *num_keys;  //len is NUM_KEY_TYPE
+	const u32 *num_keys;  //len is NUM_KEY_TYPE
 	const unsigned int (*keymap)[MAX_KEYS_SUPPORTED_IN_DRIVER];
 
 	unsigned long gpio_reset;

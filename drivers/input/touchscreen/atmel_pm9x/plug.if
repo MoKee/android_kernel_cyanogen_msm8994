@@ -918,7 +918,7 @@ static int mxt_set_obj_cfg(void *pl_dev, struct reg_config *config,
 	struct mxt_data *data = pl->dev;
 	struct mxt_object *object;
 	u16 reg;
-	u8 old_buf[255],*buf;
+	u8 old_buf[255], *buf;
 	int ret;
 	int i;
 	
@@ -1006,8 +1006,8 @@ static int mxt_set_obj_cfg(void *pl_dev, struct reg_config *config,
 		config->mask,
 		config->flag);
 
-	print_hex_dump(KERN_INFO, "[mxt]", DUMP_PREFIX_NONE, 16, 1,
-			buf, config->len, false);
+//	print_hex_dump(KERN_INFO, "[atmel]", DUMP_PREFIX_NONE, 16, 1,
+//			buf, config->len, false);
 
 	ret = __mxt_write_reg(data->client, reg, config->len, buf);
 
@@ -1043,7 +1043,7 @@ static int mxt_get_obj_cfg(void *pl_dev, struct reg_config *config, unsigned lon
 		TP_LOGD("mxt set use ext buffer 0x%p len %d\n",
 				config->ext_buf,config->len);
 		buf = config->ext_buf;
-	}else {
+	} else {
 		buf = config->buf;
 		if (config->len > sizeof(config->buf))
 			config->len = sizeof(config->buf);
@@ -1108,8 +1108,8 @@ static int mxt_get_obj_cfg(void *pl_dev, struct reg_config *config, unsigned lon
 		config->mask,
 		config->flag);
 
-	print_hex_dump(KERN_INFO, "[mxt]", DUMP_PREFIX_NONE, 16, 1,
-			buf, config->len, false);
+//	print_hex_dump(KERN_INFO, "[atmel]", DUMP_PREFIX_NONE, 16, 1,
+//			buf, config->len, false);
 
 	return ret;
 }
