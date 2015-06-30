@@ -1,6 +1,5 @@
-//#define LAST_UPDATE  "15-04-10"	//LC898122A FW
-//#define	OISFW_RELEASE_VER (0xA0A0)	//LC898122A FW MTM ACT. & IDG-2030
-//#include  <windows.h>
+//#define LAST_UPDATE  "15-06-10"	//LC898122A FW
+//#define	OISFW_RELEASE_VER (0xA1A1)	//LC898122A FW LGIT ACT. & IDG-2030
 
 #ifndef	K7_OIS_H
 #define	K7_OIS_H
@@ -12,7 +11,7 @@
 #else	//K7_OISINI
 	#define	K7_OISINI__		extern
 #endif	//K7_OISINI
-#define	CATCHMODE               // Catch mode
+//#define	CATCHMODE               // Catch mode
 
 #ifdef	CATCHMODE
   #define	CORRECT_1DEG			// Correct 1deg   disable 0.5deg

@@ -27,7 +27,7 @@ unsigned char spigyrocheck=0x00;
 #define FILRAMTAB		200
 #define FILRAMTAB_G		106
 
-#define	CATCHMODE               // Catch mode
+//#define	CATCHMODE               // Catch mode
 
 #ifdef	CATCHMODE
 
