@@ -1853,10 +1853,10 @@ ssize_t plugin_proci_pi_gesture_show(struct plugin_proci *p,
 				ARRAY_SIZE(gesture_element_array),
 				cont);
 		if (elem) {
-			offset += scnprintf(buf + offset, count - offset, "%s %02x;\n",
+			offset += scnprintf(buf + offset, count - offset, "%s %02x;",
 					elem->name, val);
 		} else {
-			offset += scnprintf(buf + offset, count - offset, "%c %02x;\n",
+			offset += scnprintf(buf + offset, count - offset, "%c %02x;",
 					SUBNAME_GES(cont->rcfg.tag), val);
 		}
 	}
