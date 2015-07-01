@@ -642,6 +642,7 @@ int led_ktd_flash_probe(struct platform_device *pdev)
 	if (!num_leds)
 		return -ECHILD;
 
+	flash_led->num_leds = num_leds;
 	flash_led->flash_node = devm_kzalloc(&pdev->dev,
 			(sizeof(struct ktd_flash_led_data) * num_leds),
 			GFP_KERNEL);
@@ -791,12 +792,14 @@ static int ktd_dev_pm_suspend(struct device *dev)
 
 	pdev = container_of(dev, struct platform_device, dev);
 	flash_led = (struct ktd_flash_led *)platform_get_drvdata(pdev);
-
+	CDBG("ktd_dev_pm_suspend\n");
 	for (i = 0; i < flash_led->num_leds; i++)
 	{
+		CDBG("ktd_dev_pm_suspend: torch[%d] flash[%d]\n", flash_led->flash_node[i].torch_cdev.cdev.brightness, flash_led->flash_node[i].flash_cdev.cdev.brightness);
 		if (flash_led->flash_node[i].flash_cdev.cdev.brightness == 0 &&
 			flash_led->flash_node[i].torch_cdev.cdev.brightness == 0)
 		{
+			CDBG("ktd_dev_pm_suspend: suspend node[%d]\n", i);
 			flash_led->flash_node[i].suspend_state = 1;
 			gpio_set_value(flash_led->flash_node[i].flash_ctrl->gpio, GPIO_OUT_LOW);
 			gpio_free(flash_led->flash_node[i].flash_ctrl->gpio);
@@ -815,7 +818,7 @@ static int ktd_dev_pm_resume(struct device *dev)
 
 	pdev = container_of(dev, struct platform_device, dev);
 	flash_led = (struct ktd_flash_led *)platform_get_drvdata(pdev);
-
+	CDBG("ktd_dev_pm_resume\n");
 	for (i = 0; i < flash_led->num_leds; i++)
 	{
 		if (flash_led->flash_node[i].flash_cdev.cdev.brightness == 0 &&
