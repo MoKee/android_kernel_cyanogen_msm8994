@@ -72,6 +72,9 @@ enum pinctrl_pin_state {
 	STATE_PRI_MI2S_ACTIVE,   /* Aux PCM = sleep, PRI_MI2S = active, TERT_MI2S = sleep, QUAT_MI2S = sleep */
 	STATE_TERT_MI2S_ACTIVE,   /* Aux PCM = sleep, PRI_MI2S = sleep, TERT_MI2S = active, QUAT_MI2S = sleep */
 	STATE_QUAT_MI2S_ACTIVE,   /* Aux PCM = sleep, PRI_MI2S = sleep, TERT_MI2S = sleep, QUAT_MI2S = active */
+#ifdef CONFIG_MACH_PM9X
+	STATE_PRI_QUAT_MI2S_ACTIVE,   /* Aux PCM = sleep, PRI_MI2S = active, TERT_MI2S = sleep, QUAT_MI2S = active */
+#endif
 	STATE_ACTIVE         /* All pins are in active state */
 };
 
@@ -89,6 +92,9 @@ struct msm_pinctrl_info {
 	struct pinctrl_state *auxpcm_active;
 	struct pinctrl_state *tert_mi2s_active;
 	struct pinctrl_state *quat_mi2s_active;
+#ifdef CONFIG_MACH_PM9X
+	struct pinctrl_state *pri_quat_mi2s_active;
+#endif
 	struct pinctrl_state *active;
 	enum pinctrl_pin_state curr_state;
 };
@@ -150,7 +156,11 @@ static struct audio_plug_dev *apq8094_db_ext_fp_out_dev;
 
 static const char *const pin_states[] = {"sleep", "auxpcm-active",
 					"pri_mi2s-active", "tert_mi2s-active",
-					"quat_mi2s-active", "active"};
+					"quat_mi2s-active",
+#ifdef CONFIG_MACH_PM9X
+					"pri-quat_mi2s-active",
+#endif
+					"active"};
 static const char *const spk_function[] = {"Off", "On"};
 static const char *const slim0_rx_ch_text[] = {"One", "Two"};
 static const char *const vi_feed_ch_text[] = {"One", "Two"};
@@ -1473,6 +1483,18 @@ static int msm_set_pinctrl(struct msm_pinctrl_info *pinctrl_info,
 			goto err;
 		}
 		break;
+#ifdef CONFIG_MACH_PM9X
+	case STATE_PRI_QUAT_MI2S_ACTIVE:
+		ret = pinctrl_select_state(pinctrl_info->pinctrl,
+					   pinctrl_info->pri_quat_mi2s_active);
+		if (ret) {
+			pr_err("%s: PRI_QUAT_MI2S state select failed with %d\n",
+				__func__, ret);
+			ret = -EIO;
+			goto err;
+		}
+		break;
+#endif
 	case STATE_DISABLE:
 		pr_err("%s: This TLMM pin state not expected\n", __func__);
 		break;
@@ -1547,6 +1569,18 @@ static int msm_reset_pinctrl(struct msm_pinctrl_info *pinctrl_info,
 			goto err;
 		}
 		break;
+#ifdef CONFIG_MACH_PM9X
+	case STATE_PRI_QUAT_MI2S_ACTIVE:
+		ret = pinctrl_select_state(pinctrl_info->pinctrl,
+					   pinctrl_info->pri_quat_mi2s_active);
+		if (ret) {
+			pr_err("%s: PRI_QUAT_MI2S state select failed with %d\n",
+				__func__, ret);
+			ret = -EIO;
+			goto err;
+		}
+		break;
+#endif
 	case STATE_DISABLE:
 		ret = pinctrl_select_state(pinctrl_info->pinctrl,
 					   pinctrl_info->disable);
@@ -1640,6 +1674,14 @@ static int msm_get_pinctrl(struct platform_device *pdev)
 		pr_err("%s: could not get quat_mi2s pinstate\n", __func__);
 		goto err;
 	}
+#ifdef CONFIG_MACH_PM9X
+	pinctrl_info->pri_quat_mi2s_active = pinctrl_lookup_state(pinctrl,
+						"pri-quat_mi2s-active");
+	if (IS_ERR(pinctrl_info->pri_quat_mi2s_active)) {
+		pr_err("%s: could not get pri_quat_mi2s pinstate\n", __func__);
+		goto err;
+	}
+#endif
 	pinctrl_info->active = pinctrl_lookup_state(pinctrl,
 						"active");
 	if (IS_ERR(pinctrl_info->active)) {
