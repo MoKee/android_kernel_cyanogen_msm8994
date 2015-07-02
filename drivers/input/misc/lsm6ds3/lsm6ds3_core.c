@@ -564,9 +564,17 @@ static void poll_function_work(struct work_struct *input_work)
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	int offset[LSM6DS3_DATA_BUF_NUM]= {0};
 	/* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
+	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
+	s64 time_before, time_after, delay;
+	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
 
 	sdata = container_of((struct work_struct *)input_work,
 			struct lsm6ds3_sensor_data, input_work);
+
+	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
+	time_before = lsm6ds3_get_time_ns();
+	delay = MS_TO_NS( (s64)sdata->poll_interval );
+	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
 
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	switch (sdata->sindex) {
@@ -656,6 +664,14 @@ static void poll_function_work(struct work_struct *input_work)
 		xyz[2] *= sdata->c_gain;
 		lsm6ds3_report_3axes_event(sdata, xyz, lsm6ds3_get_time_ns());
 	}
+
+	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
+	time_after = lsm6ds3_get_time_ns();
+	delay = delay - (time_after - time_before);
+	if (delay <= 0)
+		delay = 1;
+	sdata->ktime = ktime_set(0, delay);
+	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
 
 	hrtimer_start(&sdata->hr_timer, sdata->ktime, HRTIMER_MODE_REL);
 }
