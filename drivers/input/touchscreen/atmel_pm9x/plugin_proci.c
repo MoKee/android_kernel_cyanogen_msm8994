@@ -64,8 +64,8 @@ fixed some bugs
 #define PI_FLAG_MASK				(-1)
 
 #define PI_GESTURE_T93_DOBULE_TAP	0x2
-#define PI_GESTURE_T116_RIGHT		0xa
-#define PI_GESTURE_T116_LEFT		0xb
+#define PI_GESTURE_T115_LEFT		0x83
+#define PI_GESTURE_T115_RIGHT		0x84
 #define PI_GESTURE_T116_C		0x63
 #define PI_GESTURE_T116_M		0x6d
 #define PI_GESTURE_T116_O		0x6f
@@ -387,9 +387,21 @@ static int plugin_proci_pi_hook_t115(void *pi_id, u8 *msg, unsigned long pl_flag
 	PI_LOGI("mxt hook pi t115 0x%x\n", state);
 
 	if (state & 0x80) { //STROKE
-		idx = 0;
-		PI_LOGI("T115 key index %d\n", idx);
+		switch (state) {
+		case PI_GESTURE_T115_LEFT:
+			PI_LOGI("Gesture: Left Slide\n");
+			idx = 0;
+			break;
+		case PI_GESTURE_T115_RIGHT:
+			PI_LOGI("Gesture: Right Slide\n");
+			idx = 1;
+			break;
+		default:
+			PI_LOGW("Not support gesture\n");
+			break;
+		}
 
+		PI_LOGI("T115 key index %d\n", idx);
 		get_gesture_trace_data(p, msg[1] & 0xF, obs->trace_buf);
 	}
 
@@ -438,14 +450,6 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 			case PI_GESTURE_T116_W:
 				PI_LOGI("Gesture: W\n");
 				// NO USE
-				break;
-			case PI_GESTURE_T116_LEFT:
-				PI_LOGI("Gesture: Left slide\n");
-				idx = 2;
-				break;
-			case PI_GESTURE_T116_RIGHT:
-				PI_LOGI("Gesture: Right slide\n");
-				idx = 3;
 				break;
 			default:
 				PI_LOGW("Not support gesture\n");
@@ -1699,7 +1703,6 @@ static struct reg_config mxt_dwakeup_cfg[] = {
 //note: All gesture should be default disabled
 
 static const struct ges_tab_element gesture_element_array[] = {
-#if 0 /* CEI not use */
 	{
 		MXT_PROCI_ONETOUCHGESTUREPROCESSOR_T24,
 		0,
@@ -1760,26 +1763,6 @@ static const struct ges_tab_element gesture_element_array[] = {
 		SLIDING_DOWN | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
 		"DOWN"
 	},
-#else
-	{
-		MXT_PROCI_TOUCHSEQUENCELOGGER_T93,
-		0,
-		BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
-		"TAP"
-	},
-	{
-		MXT_SPT_SYMBOLGESTURECONFIG_T116,
-		0,
-		PI_GESTURE_T116_LEFT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
-		"LEFT"
-	},
-	{
-		MXT_SPT_SYMBOLGESTURECONFIG_T116,
-		0,
-		PI_GESTURE_T116_RIGHT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
-		"RIGHT"
-	},
-#endif
 	//MXT_SPT_SYMBOLGESTURECONFIG_T116,0,
 	{
 		MXT_PROCI_SYMBOLGESTURE_T115,
