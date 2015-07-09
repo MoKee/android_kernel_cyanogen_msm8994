@@ -722,6 +722,7 @@
 				"auxpcm-active",
 				"pri_mi2s-active",
 				"quat_mi2s-active",
+				"pri-quat_mi2s-active",
 				"active";
 		pinctrl-0 = <&pri_mi2s_sleep>, <&pri_mi2s_sd0_sleep>,
 				<&sec_aux_pcm_sleep>, <&sec_aux_pcm_din_sleep>,
@@ -740,6 +741,10 @@
 				<&quat_mi2s_sd0_active>,<&quat_mi2s_sd1_active>,
 				<&sec_aux_pcm_sleep>, <&sec_aux_pcm_din_sleep>;
 		pinctrl-4 = <&pri_mi2s_active>, <&pri_mi2s_sd0_active>,
+				<&quat_mi2s_active>,
+				<&quat_mi2s_sd0_active>,<&quat_mi2s_sd1_active>,
+				<&sec_aux_pcm_sleep>, <&sec_aux_pcm_din_sleep>;
+		pinctrl-5 = <&pri_mi2s_active>, <&pri_mi2s_sd0_active>,
 				<&sec_aux_pcm_active>, <&sec_aux_pcm_din_active>,
 				<&quat_mi2s_active>,
 				<&quat_mi2s_sd0_active>,<&quat_mi2s_sd1_active>;
