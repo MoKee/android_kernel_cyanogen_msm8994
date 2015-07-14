@@ -462,11 +462,7 @@ static u64 cpr_read_efuse_param(struct cpr_regulator *cpr_vreg, int row_start,
 		param |= (fuse[1] & ((1ULL << bits_second) - 1)) << bits_first;
 	}
 
-#ifdef CONFIG_MACH_PM9X
-	return 0;
-#else
 	return param;
-#endif
 }
 
 static bool cpr_is_allowed(struct cpr_regulator *cpr_vreg)
