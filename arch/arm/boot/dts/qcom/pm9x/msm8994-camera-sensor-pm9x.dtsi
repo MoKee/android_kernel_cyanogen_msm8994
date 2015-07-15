@@ -75,37 +75,12 @@
 		};
 	};
 
-	led_pmic_flash: qcom,leds-pmic-flash {
-		compatible = "qcom,leds-pmic-flash";
-		qcom,pmic-flash-source = <&pmi8994_flash0 &pmi8994_flash1>;
-		qcom,pmic-torch-source = <&pmi8994_torch0 &pmi8994_torch1>;
-
-		pmic_flash: pmic_flash {
-			label = "flash";
-			qcom,led-name = "pmic_flash";
-			qcom,default-led-trigger =
-				"pmic_flash_trigger";
-			qcom,max-current = <1500>;
-			qcom,duration = <1050>;
-			qcom,current = <1000>;
-		};
-
-		pmic_torch: pmic_torch {
-			label = "torch";
-			qcom,led-name = "pmic_torch";
-			qcom,default-led-trigger =
-				"pmic_torch_trigger";
-			qcom,max-current = <400>;
-			qcom,current = <155>;
-		};
-	};
-
 	led_flash0: qcom,camera-flash {
 		cell-index = <0>;
 		compatible = "qcom,camera-flash";
 		qcom,flash-type = <1>;
-		qcom,flash-source = <&ktd_flash0 &ktd_flash1 &pmic_flash>;
-		qcom,torch-source = <&ktd_torch0 &ktd_torch1 &pmic_torch>;
+		qcom,flash-source = <&ktd_flash0 &ktd_flash1>;
+		qcom,torch-source = <&ktd_torch0 &ktd_torch1>;
 	};
 };
 
