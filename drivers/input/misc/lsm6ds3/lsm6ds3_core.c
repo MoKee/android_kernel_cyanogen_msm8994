@@ -224,8 +224,8 @@
 #define ACCEL_Z_NEG_MIN_AVG_VAL		-17048
 #define ACCEL_MAX_OFFSET_VAL		655
 #define ACCEL_MIN_OFFSET_VAL			-655
-#define GYRO_MAX_OFFSET_VAL			1142
-#define GYRO_MIN_OFFSET_VAL			-1142
+#define GYRO_MAX_OFFSET_VAL			142		// Gyro FS= +/-2000dps
+#define GYRO_MIN_OFFSET_VAL			-142		// Gyro FS= +/-2000dps
 #define VALID_CALI_FILE				0xAB
 #define OUT_RANGE_CALI_FILE			0xCD
 /* Self-test */
@@ -1616,6 +1616,19 @@ static int lsm6ds3_init_sensors(struct lsm6ds3_data *cdata)
 	if (err < 0)
 		return err;
 #endif
+
+/* [PM99] S- BUG#759 Grace_Chang Let the setup in kernel driver consistent with HAL */
+	for (i = 0; i < LSM6DS3_SENSORS_NUMB; i++) {
+		sdata = &cdata->sensors[i];
+		if ((sdata->sindex == LSM6DS3_ACCEL) ||
+				(sdata->sindex == LSM6DS3_GYRO)) {
+			err = lsm6ds3_set_fs(sdata, sdata->c_gain);
+			pr_info("[Sensor] %s , sdata->sindex=%d , sdata->c_gain=%d , err=%d\n", __FUNCTION__ , sdata->sindex , sdata->c_gain , err );
+			if (err < 0)
+				return err;
+		}
+	}
+/* [PM99] E- BUG#759 Grace_Chang Let the setup in kernel driver consistent with HAL */
 
 	pr_info("[Sensor] %s , exit", __FUNCTION__ );
 	return 0;
@@ -3200,6 +3213,8 @@ int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype)
 		sdata->sindex = i;
 		sdata->name = lsm6ds3_sensor_name[i].name;
 		sdata->fifo_length = 1;
+/* [PM99] S- BUG#759 Grace_Chang Let the setup in kernel driver consistent with HAL */
+#ifdef ORG_VER
 		if ((i == LSM6DS3_ACCEL) || (i == LSM6DS3_GYRO)) {
 			sdata->c_odr = lsm6ds3_odr_table.odr_avl[0].hz;
 			sdata->c_gain = lsm6ds3_fs_table[i].fs_avl[0].gain;
@@ -3207,6 +3222,23 @@ int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype)
 			sdata->poll_interval = 1000 / sdata->c_odr;
 #endif
 		}
+#else
+		if (i == LSM6DS3_ACCEL) {
+			sdata->c_odr = lsm6ds3_odr_table.odr_avl[0].hz;
+			sdata->c_gain = lsm6ds3_fs_table[i].fs_avl[0].gain;
+			#if defined (CONFIG_LSM6DS3_POLLING_MODE)
+			sdata->poll_interval = 1000 / sdata->c_odr;
+			#endif
+		}
+		if (i == LSM6DS3_GYRO) {
+			sdata->c_odr = lsm6ds3_odr_table.odr_avl[3].hz;
+			sdata->c_gain = lsm6ds3_fs_table[i].fs_avl[3].gain;
+			#if defined (CONFIG_LSM6DS3_POLLING_MODE)
+			sdata->poll_interval = 1000 / sdata->c_odr;
+			#endif
+		}
+#endif
+/* [PM99] E- BUG#759 Grace_Chang Let the setup in kernel driver consistent with HAL */
 		if (i == LSM6DS3_STEP_COUNTER) {
 			sdata->c_odr = LSM6DS3_MIN_DURATION_MS;
 		}
