@@ -57,8 +57,6 @@ static struct platform_device *synaptics_dsx_i2c_device;
 static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 {
 	int retval;
-	u32 value;
-	const char *name;
 	struct property *prop;
 	struct device_node *np = dev->of_node;
 
@@ -67,109 +65,50 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 		"synaptics,irq-gpio", 0, NULL);
 
 	/* get interrupt active state */
-	retval = of_property_read_u32(np, "synaptics,irq-on-state",
-			&value);
-	if (retval < 0)
-		bdata->irq_on_state = 0;
-	else
-		bdata->irq_on_state = value;
+	of_property_read_u32(np, "synaptics,irq-on-state",
+			&bdata->irq_on_state);
 
 	/* get IRQ flags */
-	retval = of_property_read_u32(np, "synaptics,irq-flags", &value);
-	if (retval < 0)
-		return retval;
-	else
-		bdata->irq_flags = value;
+	of_property_read_u32(np, "synaptics,irq-flags",
+			&bdata->irq_flags);
 
 	/* get the name of regulator for power control */
-	retval = of_property_read_string(np, "synaptics,pwr-reg-name", &name);
-	if (retval == -EINVAL)
-		bdata->pwr_reg_name = NULL;
-	else if (retval < 0)
-		return retval;
-	else
-		bdata->pwr_reg_name = name;
+	of_property_read_string(np, "synaptics,pwr-reg-name",
+			&bdata->pwr_reg_name);
 
 	/* get the name of regulator for bus pullup control */
-	retval = of_property_read_string(np, "synaptics,bus-reg-name", &name);
-	if (retval == -EINVAL)
-		bdata->bus_reg_name = NULL;
-	else if (retval < 0)
-		return retval;
-	else
-		bdata->bus_reg_name = name;
+	of_property_read_string(np, "synaptics,bus-reg-name",
+			&bdata->bus_reg_name);
 
 	/* get power switch GPIO */
-	if (of_property_read_bool(np, "synaptics,power-gpio")) {
-		bdata->power_gpio = of_get_named_gpio_flags(np,
-				"synaptics,power-gpio", 0, NULL);
-		retval = of_property_read_u32(np, "synaptics,power-on-state",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->power_on_state = value;
-	} else {
-		bdata->power_gpio = -1;
-	}
+	bdata->power_gpio = of_get_named_gpio_flags(np,
+			"synaptics,power-gpio", 0, NULL);
+	of_property_read_u32(np, "synaptics,power-on-state",
+			&bdata->power_on_state);
 
 	/* get the delay time to wait after powering up device */
-	if (of_property_read_bool(np, "synaptics,power-delay-ms")) {
-		retval = of_property_read_u32(np, "synaptics,power-delay-ms",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->power_delay_ms = value;
-	} else {
-		bdata->power_delay_ms = 0;
-	}
+	of_property_read_u32(np, "synaptics,power-delay-ms",
+				&bdata->power_delay_ms);
 
 	/* get reset GPIO */
-	if (of_property_read_bool(np, "synaptics,reset-gpio")) {
-		bdata->reset_gpio = of_get_named_gpio_flags(np,
-				"synaptics,reset-gpio", 0, NULL);
-		/* get reset active state */
-		retval = of_property_read_u32(np, "synaptics,reset-on-state",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->reset_on_state = value;
-		/* get reset active time */
-		retval = of_property_read_u32(np, "synaptics,reset-active-ms",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->reset_active_ms = value;
-	} else {
-		bdata->reset_gpio = -1;
-	}
+	bdata->reset_gpio = of_get_named_gpio_flags(np,
+			"synaptics,reset-gpio", 0, NULL);
+
+	/* get reset active state */
+	of_property_read_u32(np, "synaptics,reset-on-state",
+			&bdata->reset_on_state);
+
+	/* get reset active time */
+	of_property_read_u32(np, "synaptics,reset-active-ms",
+			&bdata->reset_active_ms);
 
 	/* get the delay time to wait after resetting device */
-	if (of_property_read_bool(np, "synaptics,reset-delay-ms")) {
-		retval = of_property_read_u32(np, "synaptics,reset-delay-ms",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->reset_delay_ms = value;
-	} else {
-		bdata->reset_delay_ms = 0;
-	}
+	of_property_read_u32(np, "synaptics,reset-delay-ms",
+			&bdata->reset_delay_ms);
 
 	/* get the maximum y value for 2D area when virtual buttons are present */
-	if (of_property_read_bool(np, "synaptics,max-y-for-2d")) {
-		retval = of_property_read_u32(np, "synaptics,max-y-for-2d",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->max_y_for_2d = value;
-	} else {
-		bdata->max_y_for_2d = -1;
-	}
+	of_property_read_u32(np, "synaptics,max-y-for-2d",
+			&bdata->max_y_for_2d);
 
 	/* get swap axes flag */
 	bdata->swap_axes = of_property_read_bool(np, "synaptics,swap-axes");
@@ -181,16 +120,8 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 	bdata->y_flip = of_property_read_bool(np, "synaptics,y-flip");
 
 	/* get microbootloader mode I2C slave address */
-	if (of_property_read_bool(np, "synaptics,ub-i2c-addr")) {
-		retval = of_property_read_u32(np, "synaptics,ub-i2c-addr",
-				&value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->ub_i2c_addr = (unsigned short)value;
-	} else {
-		bdata->ub_i2c_addr = -1;
-	}
+	of_property_read_u16(np, "synaptics,ub-i2c-addr",
+			&bdata->ub_i2c_addr);
 
 	/* get the pointer to 0D button map */
 	prop = of_find_property(np, "synaptics,cap-button-codes", NULL);
@@ -238,26 +169,10 @@ static int parse_dt(struct device *dev, struct synaptics_dsx_board_data *bdata)
 	}
 
 	/* get display panel x-axis resolution */
-	if (of_property_read_bool(np, "synaptics,panel-x")) {
-		retval = of_property_read_u32(np, "synaptics,panel-x", &value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->panel_x = value;
-	} else {
-		bdata->panel_x = -1;
-	}
+	of_property_read_u32(np, "synaptics,panel-x", &bdata->panel_x);
 
 	/* get display panel y-axis resolution */
-	if (of_property_read_bool(np, "synaptics,panel-y")) {
-		retval = of_property_read_u32(np, "synaptics,panel-y", &value);
-		if (retval < 0)
-			return retval;
-		else
-			bdata->panel_y = value;
-	} else {
-		bdata->panel_y = -1;
-	}
+	of_property_read_u32(np, "synaptics,panel-y", &bdata->panel_y);
 
 	return 0;
 }
