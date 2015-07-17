@@ -32,13 +32,13 @@
 			atmel,reset-gpio = <&msm_gpio 96 0x0>;
 			atmel,irq-gpio = <&msm_gpio 76 0x8>;
 			/* Numbers of each keymap keys (keymap_0 ~ keymap_10) */
-			atmel,gpio-keymap-num = <0 0 0 0 0 0 0 1 0 2 2>;
+			atmel,gpio-keymap-num = <0 0 0 0 0 0 0 1 0 2 3>;
 			/* T93_KEY */
 			atmel,gpio-keymap_7 = <255>;
 			/* T115_KEY */
 			atmel,gpio-keymap_9 = <253 254>;
 			/* T116_KEY */
-			atmel,gpio-keymap_10 = <250 252>;
+			atmel,gpio-keymap_10 = <250 252 251>;
 		};
 	};
 };

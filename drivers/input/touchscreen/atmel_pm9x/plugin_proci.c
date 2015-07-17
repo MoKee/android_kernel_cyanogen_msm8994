@@ -71,6 +71,7 @@ fixed some bugs
 #define PI_GESTURE_T116_O		0x6f
 #define PI_GESTURE_T116_V		0x76
 #define PI_GESTURE_T116_W		0x77
+#define PI_GESTURE_T116_Z		0x7a
 
 /* Log */
 #define PI_LOG_TAG "atmel PI"
@@ -390,11 +391,11 @@ static int plugin_proci_pi_hook_t115(void *pi_id, u8 *msg, unsigned long pl_flag
 		switch (state) {
 		case PI_GESTURE_T115_LEFT:
 			PI_LOGI("Gesture: Left Slide\n");
-			idx = 0;
+			// NO USE
 			break;
 		case PI_GESTURE_T115_RIGHT:
 			PI_LOGI("Gesture: Right Slide\n");
-			idx = 1;
+			// NO USE
 			break;
 		default:
 			PI_LOGW("Not support gesture\n");
@@ -450,6 +451,10 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 			case PI_GESTURE_T116_W:
 				PI_LOGI("Gesture: W\n");
 				// NO USE
+				break;
+			case PI_GESTURE_T116_Z:
+				PI_LOGI("Gesture: Z\n");
+				idx = 2;
 				break;
 			default:
 				PI_LOGW("Not support gesture\n");
