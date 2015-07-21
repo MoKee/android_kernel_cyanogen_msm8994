@@ -1209,11 +1209,11 @@
 	};
 
 	qcom,rgb_1 {
-		linux,default_trigger = "none";
+		linux,default-trigger = "none";
 	};
 
 	qcom,rgb_2 {
-		linux,default_trigger = "none";
+		linux,default-trigger = "none";
 	};
 };
 
