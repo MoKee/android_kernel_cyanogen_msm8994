@@ -110,6 +110,9 @@
 #define BATT_MISSING_THERM_BIT		BIT(1)
 
 #define CFG_1A_REG			0x1A
+#ifdef CONFIG_MACH_PM9X
+#define TEMP_MONITOR_EN_BIT	BIT(6)
+#endif
 #define HOT_SOFT_VFLOAT_COMP_EN_BIT	BIT(3)
 #define COLD_SOFT_VFLOAT_COMP_EN_BIT	BIT(2)
 #define HOT_SOFT_CURRENT_COMP_EN_BIT	BIT(1)
@@ -4309,6 +4312,10 @@ static int smb135x_parallel_charger_probe(struct i2c_client *client,
 	mutex_init(&chip->irq_complete);
 
 	create_debugfs_entries(chip);
+
+#ifdef CONFIG_MACH_PM9X
+	rc = smb135x_masked_write(chip, CFG_1A_REG, TEMP_MONITOR_EN_BIT, 0);
+#endif
 
 	dev_info(chip->dev, "SMB135X USB PARALLEL CHARGER version = %s successfully probed\n",
 			version_str[chip->version]);
