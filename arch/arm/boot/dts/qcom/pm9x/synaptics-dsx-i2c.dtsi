@@ -36,8 +36,6 @@
 			synaptics,irq-flags = <0x2008>; /* IRQF_ONESHOT | IRQF_TRIGGER_LOW */
 			synaptics,power-delay-ms = <200>;
 			synaptics,reset-delay-ms = <200>;
-			/* TODO */
-			synaptics,max-y-for-2d = <1630>; /* remove if no virtual buttons */
 			synaptics,vir-button-codes = <158 225 2640 50 50   102 750 2640 50 50   139 1300 2640 50 50>;
 			/* TODO */
 			synaptics,panel-x = <1440>; /* set if need scale x-axis resolution */
