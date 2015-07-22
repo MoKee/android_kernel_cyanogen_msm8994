@@ -1259,6 +1259,30 @@ static int msm_routing_put_voice_stub_mixer(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+static int fm_switch_enable = 0;
+static int msm_routing_get_fm_switch_mixer(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = fm_switch_enable;
+	return 0;
+}
+
+static int msm_routing_put_fm_switch_mixer(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
+	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
+
+	pr_debug("%s: FM Switch enable %ld\n", __func__,
+			ucontrol->value.integer.value[0]);
+	if (ucontrol->value.integer.value[0])
+		snd_soc_dapm_mixer_update_power(widget, kcontrol, 1);
+	else
+		snd_soc_dapm_mixer_update_power(widget, kcontrol, 0);
+	fm_switch_enable = ucontrol->value.integer.value[0];
+	return 1;
+}
+
 static int msm_routing_get_switch_mixer(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
@@ -3684,6 +3708,11 @@ static const struct snd_kcontrol_new slim3_fm_switch_mixer_controls =
 	0, 1, 0, msm_routing_get_switch_mixer,
 	msm_routing_put_switch_mixer);
 
+static const struct snd_kcontrol_new switch_mixer_controls_fm =
+	SOC_SINGLE_EXT("Switch", SND_SOC_NOPM,
+	0, 1, 0, msm_routing_get_fm_switch_mixer,
+	msm_routing_put_fm_switch_mixer);
+
 static const struct snd_kcontrol_new slim4_fm_switch_mixer_controls =
 	SOC_SINGLE_EXT("Switch", SND_SOC_NOPM,
 	0, 1, 0, msm_routing_get_switch_mixer,
@@ -4363,6 +4392,8 @@ static const struct snd_soc_dapm_widget msm_qdsp6_widgets[] = {
 				&hfp_aux_switch_mixer_controls),
 	SND_SOC_DAPM_SWITCH("HFP_INT_UL_HL", SND_SOC_NOPM, 0, 0,
 				&hfp_int_switch_mixer_controls),
+	SND_SOC_DAPM_SWITCH("QUAT_MI2S_RX_DL_HL_FM", SND_SOC_NOPM, 0, 0,
+				&switch_mixer_controls_fm),
 
 	/* Mux Definitions */
 	SND_SOC_DAPM_MUX("LSM1 MUX", SND_SOC_NOPM, 0, 0, &lsm1_mux),
@@ -5181,6 +5212,8 @@ static const struct snd_soc_dapm_route intercon[] = {
 
 	{"SLIMBUS_DL_HL", "Switch", "SLIM0_DL_HL"},
 	{"SLIMBUS_0_RX", NULL, "SLIMBUS_DL_HL"},
+	{"QUAT_MI2S_RX_DL_HL_FM", "Switch", "SLIM0_DL_HL"},
+	{"QUAT_MI2S_RX", NULL, "QUAT_MI2S_RX_DL_HL_FM"},
 	{"SLIMBUS1_DL_HL", "Switch", "SLIM1_DL_HL"},
 	{"SLIMBUS_1_RX", NULL, "SLIMBUS1_DL_HL"},
 	{"SLIMBUS3_DL_HL", "Switch", "SLIM3_DL_HL"},
