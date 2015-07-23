@@ -803,7 +803,7 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	}
 
 #if defined(CONFIG_MACH_PM9X) && defined(CONFIG_CEI_HARDWARE_ID)
-	if (is_cei_dvt2_board()) {
+	if (is_cei_dvt2_board() || is_cei_pvt_board()) {
 		ret = st->mag.set_position(7);
 		if (ret < 0)
 			pr_err("[Sensor] Unable to set DVT2 position\n");
