@@ -1225,3 +1225,9 @@
 &spi_0 {
 	status = "disabled";
 };
+
+&pm8994_poweron {
+	qcom,pon_1 {
+		qcom,s2-type = <7>;
+	};
+};
