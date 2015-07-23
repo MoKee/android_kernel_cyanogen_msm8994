@@ -126,7 +126,7 @@ void msm_ois_eeprom_read(uint32_t RegAddr, uint8_t * RegData)
 		pr_err("eeprom_data not ready!\n");
 		return;
 	}
-	if (RegAddr > 0x1800)
+	if (RegAddr >= 0x1800)
 	{
 		*RegData = eeprom_data[RegAddr - 0x1800];
 	}
