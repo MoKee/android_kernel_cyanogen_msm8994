@@ -2707,6 +2707,7 @@ static void *def_codec_mbhc_cal(void)
 	btn_low = wcd9xxx_mbhc_cal_btn_det_mp(btn_cfg, MBHC_BTN_DET_V_BTN_LOW);
 	btn_high = wcd9xxx_mbhc_cal_btn_det_mp(btn_cfg,
 					       MBHC_BTN_DET_V_BTN_HIGH);
+#ifndef CONFIG_MACH_PM9X
 	btn_low[0] = -50;
 	btn_high[0] = 90;
 	btn_low[1] = 130;
@@ -2723,6 +2724,24 @@ static void *def_codec_mbhc_cal(void)
 	btn_high[6] = 680;
 	btn_low[7] = 681;
 	btn_high[7] = 690;
+#else
+	btn_low[0] = -50;
+	btn_high[0] = 80;
+	btn_low[1] = 81;
+	btn_high[1] = 82;
+	btn_low[2] = 83;
+	btn_high[2] = 104;
+	btn_low[3] = 105;
+	btn_high[3] = 148;
+	btn_low[4] = 149;
+	btn_high[4] = 189;
+	btn_low[5] = 190;
+	btn_high[5] = 245;
+	btn_low[6] = 246;
+	btn_high[6] = 269;
+	btn_low[7] = 270;
+	btn_high[7] = 530;
+#endif
 	n_ready = wcd9xxx_mbhc_cal_btn_det_mp(btn_cfg, MBHC_BTN_DET_N_READY);
 	n_ready[0] = 80;
 	n_ready[1] = 68;
