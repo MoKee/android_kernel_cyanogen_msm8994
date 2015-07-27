@@ -235,11 +235,11 @@ EXPORT_SYMBOL(get_cei_touch_id);
 
 static int cei_hwid_info_read(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%s=%d %s=%d %s=%d %s=%d\n", 
-				"projectid", cei_hwid_info.project_id, 
-				"hwid", cei_hwid_info.hw_id, 
-				"ddrid", cei_hwid_info.ddr_id, 
-				"touchid", cei_hwid_info.touch_id);
+	seq_printf(m, "%d %d %d %d\n",
+				cei_hwid_info.project_id,
+				cei_hwid_info.hw_id,
+				cei_hwid_info.ddr_id,
+				cei_hwid_info.touch_id);
 	return 0;
 }
 
