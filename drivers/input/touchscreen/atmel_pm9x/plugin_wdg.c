@@ -229,7 +229,7 @@ static long wdg_handle_ti_event(struct plugin_wdg *p, unsigned long flag)
 				ti_obs->failed++;
 				if (ti_obs->retry < ti_cfg->failed_reset_retry) {
 					if (p->reset)
-						p->reset(p->dev, ti_obs->retry);
+						p->reset(p->dev, 1 /*ti_obs->retry*/);
 					ti_obs->retry++;
 					ret = -EACCES;
 				}

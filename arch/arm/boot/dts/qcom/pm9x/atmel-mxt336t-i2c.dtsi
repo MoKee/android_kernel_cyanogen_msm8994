@@ -25,8 +25,8 @@
 			interrupts = <76 0x8>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&atmel_default>;
-			vdd-supply = <&pm8994_l22>;
-			avdd-supply = <&pm8994_l14>;
+			vdd-supply = <&pm8994_l14>;
+			avdd-supply = <&pm8994_l22>;
 			/* L12/L14 workaround */
 			l12-supply = <&pm8994_l12>;
 			atmel,reset-gpio = <&msm_gpio 96 0x0>;

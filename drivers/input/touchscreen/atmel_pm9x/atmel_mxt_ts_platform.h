@@ -23,6 +23,8 @@
 
 //#define CONFIG_MXT_SELFCAP_TUNE
 
+#define CONFIG_HAS_POR
+
 //#define CONFIG_MXT_PLATFORM_MTK
 #define CONFIG_MXT_PLATFORM_QUALCOMM
 #if defined(CONFIG_MXT_PLATFORM_MTK)
@@ -148,6 +150,7 @@ static inline int board_por_reset(void *device, const struct mxt_platform_data *
 
 #if defined(CONFIG_HAS_POR)
 	mxt_regulator_disable(device);
+	msleep(5000);
 	mxt_regulator_enable(device);
 
 	board_gpio_init(pdata);

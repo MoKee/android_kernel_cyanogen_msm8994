@@ -1487,6 +1487,13 @@ static void mxt_proc_t25_messages(struct mxt_data *data, u8 *msg)
 		msg[5],
 		msg[6]);
 
+	/* [CEI] FIXME ESD reset workaround */
+	if (status != 0xfe && status != 0x00) {
+		TP_LOGW("Found some error on T25, mxt set reset (POR)\n");
+		/* Do power off and on */
+		board_por_reset(data, data->pdata);
+	}
+
 	/* Save current status */
 	memcpy(&data->t25_msg[0], &msg[1], sizeof(data->t25_msg));
 }
