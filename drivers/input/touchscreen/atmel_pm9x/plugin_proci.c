@@ -66,6 +66,8 @@ fixed some bugs
 #define PI_GESTURE_T93_DOBULE_TAP	0x2
 #define PI_GESTURE_T115_LEFT		0x83
 #define PI_GESTURE_T115_RIGHT		0x84
+#define PI_GESTURE_T115_UP		0x85
+#define PI_GESTURE_T115_DOWN		0x86
 #define PI_GESTURE_T116_C		0x63
 #define PI_GESTURE_T116_M		0x6d
 #define PI_GESTURE_T116_O		0x6f
@@ -391,11 +393,19 @@ static int plugin_proci_pi_hook_t115(void *pi_id, u8 *msg, unsigned long pl_flag
 		switch (state) {
 		case PI_GESTURE_T115_LEFT:
 			PI_LOGI("Gesture: Left Slide\n");
-			// NO USE
+			idx = 0;
 			break;
 		case PI_GESTURE_T115_RIGHT:
 			PI_LOGI("Gesture: Right Slide\n");
-			// NO USE
+			idx = 1;
+			break;
+		case PI_GESTURE_T115_DOWN:
+			PI_LOGI("Gesture: Down Slide\n");
+			idx = 2;
+			break;
+		case PI_GESTURE_T115_UP:
+			PI_LOGI("Gesture: Up Slide\n");
+			idx = 3;
 			break;
 		default:
 			PI_LOGW("Not support gesture\n");
@@ -434,11 +444,11 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 			switch (SUBNAME_GES(elemment.tag)) {
 			case PI_GESTURE_T116_C:
 				PI_LOGI("Gesture: C\n");
-				// NO USE
+				idx = 3;
 				break;
 			case PI_GESTURE_T116_M:
 				PI_LOGI("Gesture: M\n");
-				// NO USE
+				idx = 4;
 				break;
 			case PI_GESTURE_T116_O:
 				PI_LOGI("Gesture: O\n");
@@ -450,7 +460,7 @@ static int plugin_proci_pi_hook_t116(void *pi_id, u8 *msg, unsigned long pl_flag
 				break;
 			case PI_GESTURE_T116_W:
 				PI_LOGI("Gesture: W\n");
-				// NO USE
+				idx = 5;
 				break;
 			case PI_GESTURE_T116_Z:
 				PI_LOGI("Gesture: Z\n");
@@ -1754,7 +1764,7 @@ static const struct ges_tab_element gesture_element_array[] = {
 		MXT_PROCI_SYMBOLGESTURE_T115,
 		0,
 		SLIDING_RIGHT | BIT_MASK(GES_CTRL_EN) | BIT_MASK(GES_SWITCH),
-		"RIGH"
+		"RIGHT"
 	},
 	{
 		MXT_PROCI_SYMBOLGESTURE_T115,
