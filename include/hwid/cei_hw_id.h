@@ -27,8 +27,9 @@ enum cei_hw_type {
 	CEI_HW_EVT2 = 1,
 	CEI_HW_DVT1 = 2,
 	CEI_HW_DVT2 = 3,
-	CEI_HW_PVT  = 4,
-	CEI_HW_INVALID = 5
+	CEI_HW_DVT3 = 4,
+	CEI_HW_PVT  = 5,
+	CEI_HW_INVALID = 6
 };
 
 /* Macro to check CEI hw board */
@@ -40,6 +41,8 @@ enum cei_hw_type {
 	(get_cei_hw_id() == CEI_HW_DVT1)
 #define is_cei_dvt2_board() \
 	(get_cei_hw_id() == CEI_HW_DVT2)
+#define is_cei_dvt3_board() \
+	(get_cei_hw_id() == CEI_HW_DVT3)
 #define is_cei_pvt_board() \
 	(get_cei_hw_id() == CEI_HW_PVT)
 

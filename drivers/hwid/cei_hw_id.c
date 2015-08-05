@@ -41,7 +41,7 @@ struct hwid_info {
 static struct hwid_info cei_hwid_info;
 
 static const char cei_hw_type_str[][CEI_HWID_STRING_LEN] = 
-	{"EVT1", "EVT2", "DVT1", "DVT2", "PVT", "INVALID"};
+	{"EVT1", "EVT2", "DVT1", "DVT2", "DVT3", "PVT", "INVALID"};
 
 static const char cei_ddr_type_str[][CEI_HWID_STRING_LEN] = 
 	{"MAIN_SRC", "2ND_SRC", "INVALID"};
