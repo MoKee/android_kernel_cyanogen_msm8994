@@ -243,6 +243,8 @@ struct smbchg_chip {
 	struct delayed_work		warm_recharging_det_work;
 	bool				warm_recharging_en;
 	struct smbchg_wakeup_source	warm_recharging_wakeup_source;
+	struct delayed_work		parallel_batt_warm_en_work;
+	int parallel_batt_warm_work_tries;
 #endif
 	spinlock_t			sec_access_lock;
 	struct mutex			current_change_lock;
@@ -1617,7 +1619,12 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip)
 		pr_smb(PR_STATUS, "JEITA active, skipping\n");
 		return false;
 	}
-
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
+	if (get_prop_batt_health(chip) == POWER_SUPPLY_HEALTH_GOOD && !chip->warm_recharging_en) {
+		pr_smb(PR_STATUS, "Battery warm limitation is holdling, skipping\n");
+		return false;
+	}
+#endif
 	rc = smbchg_read(chip, &reg, chip->misc_base + IDEV_STS, 1);
 	if (rc < 0) {
 		dev_err(chip->dev, "Couldn't read status 5 rc = %d\n", rc);
@@ -2055,6 +2062,37 @@ disable_parallel:
 				chip->cfg_fastchg_current_ma;
 	}
 }
+
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
+#define PARALLEL_BATT_WARM_RECHARGING_WORK_MS 3500
+#define PARALLEL_BATT_WARM_RECHARGING_TIMES 10
+static void smbchg_parallel_batt_warm_usb_en_work(struct work_struct *work)
+{
+	struct smbchg_chip *chip = container_of(work,
+				struct smbchg_chip,
+				parallel_en_work.work);
+	smbchg_relax(chip, PM_PARALLEL_CHECK);
+	mutex_lock(&chip->parallel.lock);
+	if (smbchg_is_parallel_usb_ok(chip)) {
+		smbchg_parallel_usb_enable(chip);
+		chip->parallel_batt_warm_work_tries = 0;
+		pr_smb(PR_STATUS, "parallel charging enable by battery warm recharging, tries %d\n", chip->parallel_batt_warm_work_tries);
+	} else {
+		//check parallel function a few times to avoid HW has not changed to right status , 
+		//such as charger status still keeps in taper mode, 
+		chip->parallel_batt_warm_work_tries ++;
+		if (chip->parallel_batt_warm_work_tries < PARALLEL_BATT_WARM_RECHARGING_TIMES) {
+			schedule_delayed_work(&chip->parallel_batt_warm_en_work, 
+				msecs_to_jiffies(PARALLEL_BATT_WARM_RECHARGING_WORK_MS));
+			pr_smb(PR_STATUS, "parallel charging reschedule, tries %d\n", chip->parallel_batt_warm_work_tries);
+		} else {
+			chip->parallel_batt_warm_work_tries = 0;
+			pr_smb(PR_STATUS, "parallel charging reschedule stop, tries %d\n", chip->parallel_batt_warm_work_tries);
+		}
+	}
+	mutex_unlock(&chip->parallel.lock);
+}
+#endif
 
 static void smbchg_parallel_usb_en_work(struct work_struct *work)
 {
@@ -4488,6 +4526,10 @@ static irqreturn_t batt_cold_handler(int irq, void *_chip)
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE 
+#define BATT_WARM_RECHARGIN_THRESHOLD 400 
+#endif
+
 static irqreturn_t batt_warm_handler(int irq, void *_chip)
 {
 	struct smbchg_chip *chip = _chip;
@@ -4509,7 +4551,7 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 	//warm to normal
 	} else {
 		get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
-		if (bat_temp_now > 400) {
+		if(bat_temp_now > BATT_WARM_RECHARGIN_THRESHOLD) {
 			chip->warm_recharging_en = 0;
 			smbchg_source_stay_awake(&chip->warm_recharging_wakeup_source);
 			pr_smb(PR_STATUS,"[JEITA] start batt warm recharing schedule, temp %d\n", bat_temp_now);
@@ -4535,13 +4577,14 @@ static void smbchg_warm_recharging_det_work(struct work_struct *work)
 
 	if(!chip->batt_warm) {
 		get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
-		if(bat_temp_now <= 400) {
+		if(bat_temp_now <= BATT_WARM_RECHARGIN_THRESHOLD) {
 			smbchg_float_voltage_set(chip, chip->cfg_vfloat_mv);
 			smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
 			cancel_delayed_work(&chip->warm_recharging_det_work);
 			smbchg_source_relax(&chip->warm_recharging_wakeup_source);
 			chip->warm_recharging_en = 1;
-			smbchg_parallel_usb_check_ok(chip);
+			schedule_delayed_work(&chip->parallel_batt_warm_en_work, 
+				msecs_to_jiffies(PARALLEL_BATT_WARM_RECHARGING_WORK_MS));
 			if (chip->psy_registered)
 				power_supply_changed(&chip->batt_psy);
 			pr_smb(PR_STATUS,"[JEITA] batt warm recharing begin, temp  %d\n", bat_temp_now);
@@ -6292,6 +6335,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
 	INIT_DELAYED_WORK(&chip->hot_recharging_det_work, smbchg_hot_recharging_det_work);
 	INIT_DELAYED_WORK(&chip->warm_recharging_det_work, smbchg_warm_recharging_det_work);
+	INIT_DELAYED_WORK(&chip->parallel_batt_warm_en_work, smbchg_parallel_batt_warm_usb_en_work);
 #endif
 	chip->vadc_dev = vadc_dev;
 	chip->spmi = spmi;
