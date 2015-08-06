@@ -1161,6 +1161,7 @@
 &pmi8994_charger {
 	qcom,fastchg-current-ma = <3000>;
 	qcom,float-voltage-mv = <4400>;
+	qcom,warm-float-voltage-mv = <4100>;
 	qcom,warm-fastchg-current-ma = <1400>;
 	qcom,cool-fastchg-current-ma = <560>;
 	qcom,dc-psy-type = "Wipower";
