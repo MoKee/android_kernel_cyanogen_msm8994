@@ -139,7 +139,22 @@ static int msm_dts_srs_trumedia_control_set(struct snd_kcontrol *kcontrol,
 
 	pr_debug("SRS control normal called\n");
 	msm_pcm_routing_acquire_lock();
+
+#ifndef CONFIG_MACH_PM9X
 	port_id = SLIMBUS_0_RX;
+#else
+	{
+		extern int msm8994_quat_mi2s_snd_is_startup(void);
+		if (msm8994_quat_mi2s_snd_is_startup()) {
+			pr_debug("SRS %s: set port_id to AFE_PORT_ID_QUATERNARY_MI2S_RX\n", __func__);
+			port_id = AFE_PORT_ID_QUATERNARY_MI2S_RX;
+		} else {
+			pr_debug("SRS %s: set port_id to SLIMBUS_0_RX\n", __func__);
+			port_id = SLIMBUS_0_RX;
+		}
+	}
+#endif
+
 	ret = msm_dts_srs_trumedia_control_set_(port_id, kcontrol, ucontrol);
 	msm_pcm_routing_release_lock();
 	return ret;
