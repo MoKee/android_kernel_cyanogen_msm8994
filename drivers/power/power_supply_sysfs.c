@@ -199,6 +199,9 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(temp_alert_max),
 	POWER_SUPPLY_ATTR(temp_cool),
 	POWER_SUPPLY_ATTR(temp_warm),
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
+	POWER_SUPPLY_ATTR(hot_recharging),
+#endif
 	POWER_SUPPLY_ATTR(temp_ambient),
 	POWER_SUPPLY_ATTR(temp_ambient_alert_min),
 	POWER_SUPPLY_ATTR(temp_ambient_alert_max),
@@ -226,9 +229,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(force_tlim),
 	POWER_SUPPLY_ATTR(allow_detection),
 	POWER_SUPPLY_ATTR(cycle_count_id),
-#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
-	POWER_SUPPLY_ATTR(hot_recharging),
-#endif
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
