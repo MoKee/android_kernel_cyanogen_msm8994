@@ -2155,7 +2155,7 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	Diff_ThdL_CT = cci_ps_low_thd - cci_result_ct;
 	//when IT=0x73 and LED CURRENT=100mA, (ps_close-ps_ct) should be bigger than 75
 	//Optical team change the range from 75 to 100. 20130117
-	if(Diff_ThdL_CT > 200 && cci_result_ct<=11000 ){
+	if(Diff_ThdL_CT > 200 && cci_result_ct<=5000 ){
 		//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
 		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT*14/10; //*****************This is N2F value*************** set (L-CT)*1.4+CT=H
 
