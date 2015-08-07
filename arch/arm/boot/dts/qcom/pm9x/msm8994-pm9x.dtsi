@@ -1142,7 +1142,7 @@
 	qcom,battery-data = <&mtp_batterydata>;
 	qcom,ext-sense-type;
 	qcom,fg-cc-cv-threshold-mv = <4390>;
-	qcom,fg-cutoff-voltage-mv = <3400>;
+	qcom,fg-cutoff-voltage-mv = <3300>;
 	qcom,warm-bat-decidegc = <450>;
 	qcom,cool-bat-decidegc = <200>;
 	qcom,hot-bat-decidegc = <570>;
