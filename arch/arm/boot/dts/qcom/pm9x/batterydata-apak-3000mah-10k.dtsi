@@ -1,0 +1,51 @@
+/*PM99 battery profile tuned from QCT
+comments : #1963727_Compal_PM99_2800mAh_averaged_MasterSlave_Apr20th2015
+CEI implemented this battery profile on April 21, 2012*/
+
+qcom,apak-3000mah-10k {
+	qcom,max-voltage-uv = <4400000>;
+	qcom,nom-batt-capacity-mah = <2800>;
+	qcom,batt-id-kohm = <10>;
+	qcom,battery-beta = <3435>;
+	qcom,battery-type = "apak-3000mah-10k";
+	qcom,chg-rslow-comp-c1 = <2788203>;
+	qcom,chg-rslow-comp-c2 = <3650520>;
+	qcom,chg-rs-to-rslow = <848151>;
+	qcom,chg-rslow-comp-thr = <0x9D>;
+	qcom,checksum = <0x0D93>;
+	qcom,gui-version = "PMI8994GUI - 2.1.6.4";
+	qcom,fg-profile-data = [
+		 FA 83 DA 7D 
+		 F4 81 76 7C 
+		 68 83 17 75 
+		 67 89 10 94 
+		 0C 82 CD 99 
+		 4A BC 45 C8 
+		 5B 13 0C 88 
+		 8C 7E 6D 82 
+		 EA 7C 5B 83 
+		 15 5B 08 81 
+		 E6 8C 54 82 
+		 76 99 B4 BC 
+		 7E C9 5B 0E 
+		 7C 0B CC 5B 
+		 14 70 B8 FE 
+		 9A 3D 52 3E 
+		 27 38 00 00 
+		 04 4C 74 3B 
+		 3E 35 00 00 
+		 00 00 00 00 
+		 00 00 00 00 
+		 9F 6B 88 6A 
+		 10 69 42 89 
+		 BC 75 8F 68 
+		 90 64 2E 80 
+		 23 75 A6 63 
+		 C5 87 44 C2 
+		 0E 95 63 9A 
+		 65 A0 71 0C 
+		 28 00 FF 36 
+		 F0 11 30 03 
+		 00 00 00 00 
+	];
+};

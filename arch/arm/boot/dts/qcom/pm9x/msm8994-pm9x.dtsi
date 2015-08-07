@@ -1134,7 +1134,9 @@
 /{
 	mtp_batterydata: qcom,battery-data {
 		qcom,batt-id-range-pct = <15>;
-		#include "batterydata-atl-2800mah.dtsi"
+		#include "batterydata-apak-2800mah.dtsi"
+		#include "batterydata-apak-3000mah-10k.dtsi"
+		#include "batterydata-apak-3000mah-100k.dtsi"
 	};
 };
 
