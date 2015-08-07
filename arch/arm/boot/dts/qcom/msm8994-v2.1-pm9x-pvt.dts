@@ -17,12 +17,19 @@
 #include "pm9x/msm8994-pm9x.dtsi"
 
 / {
-	model = "Qualcomm Technologies, Inc. MSM8994v2.1 Compal PM99";
+	model = "Qualcomm Technologies, Inc. MSM8994v2.1 Compal PM9X PVT";
 	compatible = "qcom,msm8994-mtp", "qcom,msm8994", "qcom,mtp";
-	qcom,board-id = <8 0>;
+	qcom,board-id = <25 0x05>, <25 0x0D>, <25 0x15>;
 };
 
-&pmi8994_charger {
-	qcom,charge-unknown-battery;
-	qcom,iterm-disabled;
+&i2c_15 {
+	yas537@2e {
+		yas,position = <7>;
+	};
+};
+
+&i2c_7 {
+	stk3x1x@48 {
+		vdd-supply = <&pm8994_s4>;
+	};
 };

@@ -1161,6 +1161,8 @@
 };
 
 &pmi8994_charger {
+	qcom,charge-unknown-battery;
+	qcom,iterm-disabled;
 	qcom,fastchg-current-ma = <3000>;
 	qcom,float-voltage-mv = <4400>;
 	qcom,warm-float-voltage-mv = <4100>;
