@@ -369,11 +369,7 @@ struct device_node *of_batterydata_get_best_profile(
 			if (rc)
 				continue;
 			for (i = 0; i < batt_ids.num; i++) {
-#ifdef CONFIG_MACH_PM9X
-				delta = -1;
-#else
 				delta = abs(batt_ids.kohm[i] - batt_id_kohm);
-#endif
 				limit = (batt_ids.kohm[i] * id_range_pct) / 100;
 				in_range = (delta <= limit);
 				/*
@@ -397,14 +393,12 @@ struct device_node *of_batterydata_get_best_profile(
 	}
 
 	/* check that profile id is in range of the measured batt_id */
-#ifndef CONFIG_MACH_PM9X
 	if (abs(best_id_kohm - batt_id_kohm) >
 			((best_id_kohm * id_range_pct) / 100)) {
 		pr_err("out of range: profile id %d batt id %d pct %d",
 			best_id_kohm, batt_id_kohm, id_range_pct);
 		return NULL;
 	}
-#endif
 
 	rc = of_property_read_string(best_node, "qcom,battery-type",
 							&battery_type);
