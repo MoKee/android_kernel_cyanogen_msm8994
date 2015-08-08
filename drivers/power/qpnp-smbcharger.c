@@ -2070,7 +2070,7 @@ static void smbchg_parallel_batt_warm_usb_en_work(struct work_struct *work)
 {
 	struct smbchg_chip *chip = container_of(work,
 				struct smbchg_chip,
-				parallel_en_work.work);
+				parallel_batt_warm_en_work.work);
 	smbchg_relax(chip, PM_PARALLEL_CHECK);
 	mutex_lock(&chip->parallel.lock);
 	if (smbchg_is_parallel_usb_ok(chip)) {
