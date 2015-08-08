@@ -717,6 +717,7 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	struct yas_state *st = NULL;
 	struct input_dev *input_dev = NULL;
 	int ret, i;
+	u32 position;
 
 	pr_info("[Sensor] %s , enter", __FUNCTION__ );
 
@@ -732,6 +733,10 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		goto error_ret;
 	}
 	i2c_set_clientdata(i2c, st);
+
+	ret = of_property_read_u32(i2c->dev.of_node, "yas,position", &position);
+	if (ret)
+		position = 0;
 
 	// S- [PM99] Grace_Chang add for sensor power
 	/* Set I2C power */
@@ -798,6 +803,9 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		ret = -EFAULT;
 		goto error_remove_sysfs;
 	}
+
+	st->mag.set_position(position);
+
 	pr_info("[Sensor] %s , probe success, exit", __FUNCTION__ );
 	return 0;
 
