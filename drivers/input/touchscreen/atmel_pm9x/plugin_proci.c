@@ -1886,11 +1886,12 @@ int plugin_proci_pi_gesture_store(struct plugin_proci *p,
 	offset = 0;
 	do {
 		/* parse command (e.g. TAP 1;o 1;v 1;) */
+		ofs = 0;
 		len = sscanf(buf + offset, "%16s %02x;%n", name, &val, &ofs);
 		if (len > 0)
 			PI_LOGI("%s=%x; len %d offset %d\n", name, val, len, offset);
 
-		if (len != 2) {
+		if (len != 2 || ofs == 0) {
 			ret = EINVAL;
 			break;
 		}
