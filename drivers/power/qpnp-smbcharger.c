@@ -141,7 +141,9 @@ struct smbchg_chip {
 	struct parallel_usb_cfg		parallel;
 	struct delayed_work		parallel_en_work;
 	struct dentry			*debug_root;
-
+#ifdef CONFIG_MACH_PM9X
+	bool 				parallel_first_check;
+#endif
 	/* wipower params */
 	struct ilim_map			wipower_default;
 	struct ilim_map			wipower_pt;
@@ -1797,7 +1799,7 @@ static void taper_irq_en(struct smbchg_chip *chip, bool en)
 }
 
 #ifdef CONFIG_MACH_PM9X
-#define PARALLEL_MONITOR_TIMER_MS 30000
+#define PARALLEL_CHARGER_FIRST_EN_DELAY_MS	30000
 #endif
 static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 {
@@ -1815,10 +1817,11 @@ static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 	power_supply_set_present(parallel_psy, false);
 
 #ifdef CONFIG_MACH_PM9X
-	schedule_delayed_work(
-			&chip->parallel_en_work,
-			msecs_to_jiffies(PARALLEL_MONITOR_TIMER_MS));
-	pr_smb(PR_STATUS, "parallel charger monitor start per %d seconds\n", PARALLEL_MONITOR_TIMER_MS);
+	if (!chip->parallel_first_check) {
+		chip->parallel_first_check = 1;
+		schedule_delayed_work(&chip->parallel_en_work,
+			msecs_to_jiffies(PARALLEL_CHARGER_FIRST_EN_DELAY_MS));
+	}
 #endif
 
 #ifndef CONFIG_BATTERY_JEITA_COMPLIANCE
