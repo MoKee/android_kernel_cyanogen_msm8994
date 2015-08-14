@@ -992,6 +992,13 @@ static int32_t msm_ois_platform_probe(struct platform_device *pdev)
 		return rc;
 	}
 
+	rc = of_property_read_u32((&pdev->dev)->of_node, "qcom,i2c-freq-mode",
+		&msm_ois_t->i2c_freq_mode);
+	if (rc < 0 || (msm_ois_t->i2c_freq_mode >= I2C_MAX_MODES)) {
+		msm_ois_t->i2c_freq_mode = I2C_STANDARD_MODE;
+		CDBG("%s Default I2C standard speed mode.\n", __func__);
+	}
+
 	if (of_find_property((&pdev->dev)->of_node,
 			"qcom,cam-vreg-name", NULL)) {
 		vreg_cfg = &msm_ois_t->vreg_cfg;
@@ -1024,6 +1031,7 @@ static int32_t msm_ois_platform_probe(struct platform_device *pdev)
 	cci_client = msm_ois_t->i2c_client.cci_client;
 	cci_client->cci_subdev = msm_cci_get_subdev();
 	cci_client->cci_i2c_master = msm_ois_t->cci_master;
+	cci_client->i2c_freq_mode = msm_ois_t->i2c_freq_mode;
 	v4l2_subdev_init(&msm_ois_t->msm_sd.sd,
 		msm_ois_t->ois_v4l2_subdev_ops);
 	v4l2_set_subdevdata(&msm_ois_t->msm_sd.sd, msm_ois_t);

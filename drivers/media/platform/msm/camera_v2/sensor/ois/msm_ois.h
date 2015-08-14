@@ -55,6 +55,7 @@ struct msm_ois_ctrl_t {
 	void *user_data;
 	uint16_t i2c_tbl_index;
 	enum cci_i2c_master_t cci_master;
+	enum i2c_freq_mode_t i2c_freq_mode;
 	uint32_t subdev_id;
 	enum msm_ois_state_t ois_state;
 	struct msm_ois_vreg vreg_cfg;
