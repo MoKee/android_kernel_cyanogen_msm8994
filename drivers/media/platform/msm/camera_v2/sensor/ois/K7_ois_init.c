@@ -1,4 +1,4 @@
-//#define LAST_UPDATE  "15-04-10"	//LC898122A FW
+//#define LAST_UPDATE  "15-06-10"	//LC898122A FW
 //==============================================================================
 // ois_init.c Code START
 //==============================================================================
@@ -840,38 +840,38 @@ void	E2pDat( void )
 {
 	MemClr( ( unsigned char * )&StCalDat, sizeof( stCalDat ) ) ;
 	
-	E2pRed( (unsigned short)HALL_BIAS_Z,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlzGan ) ; WitTim(5);
-	E2pRed( (unsigned short)HALL_OFFSET_Z,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlzOff ) ; WitTim(5);
-	E2pRed( (unsigned short)HALL_ADOFFSET_Z,		2,	( unsigned char * )&StCalDat.StHalAdj.UsAdzOff ) ; WitTim(5);
-	E2pRed( (unsigned short)LOOP_GAIN_Z,			2,	( unsigned char * )&StCalDat.StLopGan.UsLzgVal ) ; WitTim(5);
-	E2pRed( (unsigned short)DRV_OFFSET_Z,			1, ( unsigned char * )&StCalDat.StAfOff.UcAfOff ) ; WitTim(5);
-	E2pRed( (unsigned short)ADJ_HALL_Z_FLG,			2,	( unsigned char * )&StCalDat.UsAdjHallZF ) ; WitTim(5);
+	E2pRed( (unsigned short)HALL_BIAS_Z,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlzGan ) ;
+	E2pRed( (unsigned short)HALL_OFFSET_Z,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlzOff ) ;
+	E2pRed( (unsigned short)HALL_ADOFFSET_Z,		2,	( unsigned char * )&StCalDat.StHalAdj.UsAdzOff ) ;
+	E2pRed( (unsigned short)LOOP_GAIN_Z,			2,	( unsigned char * )&StCalDat.StLopGan.UsLzgVal ) ;
+	E2pRed( (unsigned short)DRV_OFFSET_Z,			1, ( unsigned char * )&StCalDat.StAfOff.UcAfOff ) ;
+	E2pRed( (unsigned short)ADJ_HALL_Z_FLG,			2,	( unsigned char * )&StCalDat.UsAdjHallZF ) ;
 
-	E2pRed( (unsigned short)HALL_BIAS_X,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlxGan ) ; WitTim(5);
-	E2pRed( (unsigned short)HALL_BIAS_Y,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlyGan ) ; WitTim(5);
+	E2pRed( (unsigned short)HALL_BIAS_X,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlxGan ) ;
+	E2pRed( (unsigned short)HALL_BIAS_Y,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlyGan ) ;
 
-	E2pRed( (unsigned short)HALL_OFFSET_X,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlxOff ) ; WitTim(5);
-	E2pRed( (unsigned short)HALL_OFFSET_Y,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlyOff ) ; WitTim(5);
+	E2pRed( (unsigned short)HALL_OFFSET_X,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlxOff ) ;
+	E2pRed( (unsigned short)HALL_OFFSET_Y,			2,	( unsigned char * )&StCalDat.StHalAdj.UsHlyOff ) ;
 
-	E2pRed( (unsigned short)LOOP_GAIN_X,			2,	( unsigned char * )&StCalDat.StLopGan.UsLxgVal ) ; WitTim(5);
-	E2pRed( (unsigned short)LOOP_GAIN_Y,			2,	( unsigned char * )&StCalDat.StLopGan.UsLygVal ) ; WitTim(5);
+	E2pRed( (unsigned short)LOOP_GAIN_X,			2,	( unsigned char * )&StCalDat.StLopGan.UsLxgVal ) ;
+	E2pRed( (unsigned short)LOOP_GAIN_Y,			2,	( unsigned char * )&StCalDat.StLopGan.UsLygVal ) ;
 
-	E2pRed( (unsigned short)LENS_CENTER_FINAL_X,	2,	( unsigned char * )&StCalDat.StLenCen.UsLsxVal ) ; WitTim(5);
-	E2pRed( (unsigned short)LENS_CENTER_FINAL_Y,	2,	( unsigned char * )&StCalDat.StLenCen.UsLsyVal ) ; WitTim(5);
+	E2pRed( (unsigned short)LENS_CENTER_FINAL_X,	2,	( unsigned char * )&StCalDat.StLenCen.UsLsxVal ) ;
+	E2pRed( (unsigned short)LENS_CENTER_FINAL_Y,	2,	( unsigned char * )&StCalDat.StLenCen.UsLsyVal ) ;
 
-	E2pRed( (unsigned short)GYRO_AD_OFFSET_X,		2,	( unsigned char * )&StCalDat.StGvcOff.UsGxoVal ) ; WitTim(5);
-	E2pRed( (unsigned short)GYRO_AD_OFFSET_Y,		2,	( unsigned char * )&StCalDat.StGvcOff.UsGyoVal ) ; WitTim(5);
+	E2pRed( (unsigned short)GYRO_AD_OFFSET_X,		2,	( unsigned char * )&StCalDat.StGvcOff.UsGxoVal ) ;
+	E2pRed( (unsigned short)GYRO_AD_OFFSET_Y,		2,	( unsigned char * )&StCalDat.StGvcOff.UsGyoVal ) ;
 
-	E2pRed( (unsigned short)OSC_CLK_VAL,			1,	( unsigned char * )&StCalDat.UcOscVal ) ; WitTim(5);
+	E2pRed( (unsigned short)OSC_CLK_VAL,			1,	( unsigned char * )&StCalDat.UcOscVal ) ;
 
-	E2pRed( (unsigned short)ADJ_HALL_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjHallF ) ; WitTim(5);
-	E2pRed( (unsigned short)ADJ_GYRO_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjGyroF ) ; WitTim(5);
-	E2pRed( (unsigned short)ADJ_LENS_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjLensF ) ; WitTim(5);
+	E2pRed( (unsigned short)ADJ_HALL_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjHallF ) ;
+	E2pRed( (unsigned short)ADJ_GYRO_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjGyroF ) ;
+	E2pRed( (unsigned short)ADJ_LENS_FLAG,			2,	( unsigned char * )&StCalDat.UsAdjLensF ) ;
 
-	E2pRed( (unsigned short)GYRO_GAIN_X,			4,	( unsigned char * )&StCalDat.UlGxgVal ) ; WitTim(5);
-	E2pRed( (unsigned short)GYRO_GAIN_Y,			4,	( unsigned char * )&StCalDat.UlGygVal ) ; WitTim(5);
+	E2pRed( (unsigned short)GYRO_GAIN_X,			4,	( unsigned char * )&StCalDat.UlGxgVal ) ;
+	E2pRed( (unsigned short)GYRO_GAIN_Y,			4,	( unsigned char * )&StCalDat.UlGygVal ) ;
 
-	E2pRed( (unsigned short)FW_VERSION_INFO,		2,	( unsigned char * )&StCalDat.UsVerDat ) ; WitTim(5);
+	E2pRed( (unsigned short)FW_VERSION_INFO,		2,	( unsigned char * )&StCalDat.UsVerDat ) ;
 
 	return;
 }
