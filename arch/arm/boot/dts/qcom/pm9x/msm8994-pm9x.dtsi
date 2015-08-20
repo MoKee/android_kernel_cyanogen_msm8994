@@ -1181,6 +1181,7 @@
 					<6820000 7820000 550 700 600>,
 					<7820000 8500000 550 700 550>;
 	/delete-property/ qcom,iterm-ma;
+	qcom,usb-voice-call-ma = <450>;
 };
 
 &cnss {
