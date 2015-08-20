@@ -110,6 +110,10 @@ struct smbchg_chip {
 	int				target_fastchg_current_ma;
 	int				cfg_fastchg_current_ma;
 	int				fastchg_current_ma;
+#ifdef CONFIG_MACH_PM9X
+	int				voice_call_current_ma;
+	int				voice_call_active;
+#endif
 
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
 	int				cfg_vfloat_mv;
@@ -284,6 +288,10 @@ enum smbchg_wa {
 	SMBCHG_AICL_DEGLITCH_WA = BIT(0),
 	SMBCHG_HVDCP_9V_EN_WA	= BIT(1),
 };
+
+#ifdef CONFIG_MACH_PM9X
+static struct smbchg_chip *g_chip = NULL;
+#endif
 
 enum print_reason {
 	PR_REGISTER	= BIT(0),
@@ -1072,6 +1080,30 @@ static int calc_thermal_limited_current(struct smbchg_chip *chip,
 {
 	int therm_ma;
 
+#ifdef CONFIG_MACH_PM9X
+	if ((chip->therm_lvl_sel > 0
+		&& chip->therm_lvl_sel < (chip->thermal_levels - 1))
+		|| chip->voice_call_active) {
+		/* consider two conditions:
+		 * 1) consider thermal limit only when it is active and not at the highest level
+		 * 2) consider when voice call is active
+		 */
+		therm_ma = (int)chip->thermal_mitigation[chip->therm_lvl_sel];
+		if (chip->voice_call_active && therm_ma > chip->voice_call_current_ma) {
+			pr_smb(PR_STATUS,
+				"Limiting current due to voice call: %d mA\n",
+				chip->voice_call_current_ma);
+			return chip->voice_call_current_ma;
+		} else {
+			if (therm_ma < current_ma) {
+				pr_smb(PR_STATUS,
+					"Limiting current due to thermal: %d mA\n",
+					therm_ma);
+				return therm_ma;
+			}
+		}
+	}
+#else
 	if (chip->therm_lvl_sel > 0
 			&& chip->therm_lvl_sel < (chip->thermal_levels - 1)) {
 		/*
@@ -1086,6 +1118,7 @@ static int calc_thermal_limited_current(struct smbchg_chip *chip,
 			return therm_ma;
 		}
 	}
+#endif
 
 	return current_ma;
 }
@@ -1676,6 +1709,13 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip)
 			chip->usb_tl_current_ma, min_current_thr_ma);
 		return false;
 	}
+
+#ifdef CONFIG_MACH_PM9X
+	if (chip->voice_call_active) {
+		pr_smb(PR_STATUS, "usb input current is throttled during voice call, skipping\n");
+		return false;
+	}
+#endif
 
 	return true;
 }
@@ -5805,6 +5845,10 @@ static int smb_parse_dt(struct smbchg_chip *chip)
 			chip->parallel.min_9v_current_thr_ma);
 	OF_PROP_READ(chip, chip->jeita_temp_hard_limit,
 			"jeita-temp-hard-limit", rc, 1);
+#ifdef CONFIG_MACH_PM9X
+	OF_PROP_READ(chip, chip->voice_call_current_ma,
+			"usb-voice-call-ma", rc, 1);
+#endif
 
 	/* read boolean configuration properties */
 	chip->use_vfloat_adjustments = of_property_read_bool(node,
@@ -6215,6 +6259,20 @@ static void dump_regs(struct smbchg_chip *chip)
 		dump_reg(chip, chip->misc_base + addr, "MISC CFG");
 }
 
+#ifdef CONFIG_MACH_PM9X
+void qpnp_set_in_voice_call(bool active)
+{
+	if (g_chip) {
+		mutex_lock(&g_chip->current_change_lock);
+		g_chip->voice_call_active = active;
+		smbchg_set_thermal_limited_usb_current_max(g_chip,
+			g_chip->usb_target_current_ma);
+		mutex_unlock(&g_chip->current_change_lock);
+	}
+}
+EXPORT_SYMBOL_GPL(qpnp_set_in_voice_call);
+#endif
+
 static int create_debugfs_entries(struct smbchg_chip *chip)
 {
 	struct dentry *ent;
@@ -6475,6 +6533,9 @@ static int smbchg_probe(struct spmi_device *spmi)
 			chip->revision[ANA_MAJOR], chip->revision[ANA_MINOR],
 			get_prop_batt_present(chip),
 			chip->dc_present, chip->usb_present);
+#ifdef CONFIG_MACH_PM9X
+	g_chip = chip;
+#endif
 	return 0;
 
 unregister_dc_psy:
@@ -6502,6 +6563,9 @@ static int smbchg_remove(struct spmi_device *spmi)
 
 	power_supply_unregister(&chip->batt_psy);
 	smbchg_regulator_deinit(chip);
+#ifdef CONFIG_MACH_PM9X
+	g_chip = NULL;
+#endif
 
 	return 0;
 }

@@ -55,6 +55,10 @@ static int get_cal_path(int path_type);
 
 static struct mutex routing_lock;
 
+#ifdef CONFIG_MACH_PM9X
+static int voice_use_count = 0;
+#endif
+
 static struct cal_type_data *cal_data;
 struct msm_pcm_channel_mux channel_mux;
 
@@ -1113,6 +1117,10 @@ static int msm_routing_put_audio_mixer(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+#ifdef CONFIG_MACH_PM9X
+extern void qpnp_set_in_voice_call(bool active);
+#endif
+
 static void msm_pcm_routing_process_voice(u16 reg, u16 val, int set)
 {
 	u32 session_id = 0;
@@ -1136,6 +1144,24 @@ static void msm_pcm_routing_process_voice(u16 reg, u16 val, int set)
 		__func__, val, session_id);
 
 	mutex_lock(&routing_lock);
+
+#ifdef CONFIG_MACH_PM9X
+	if (set) {
+		if (voice_use_count == 0) {
+			pr_debug("%s: enable charging limit\n",
+				__func__);
+			qpnp_set_in_voice_call(true);
+		}
+		voice_use_count++;
+	} else {
+		voice_use_count--;
+		if (voice_use_count == 0) {
+			pr_debug("%s: disable charging limit\n",
+				__func__);
+			qpnp_set_in_voice_call(false);
+		}
+	}
+#endif
 
 	if (set)
 		set_bit(val, &msm_bedais[reg].fe_sessions);
