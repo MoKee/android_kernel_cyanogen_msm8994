@@ -90,6 +90,7 @@
 		reg = <0x0>;
 		compatible = "qcom,actuator";
 		qcom,cci-master = <0>;
+		qcom,i2c-freq-mode = <1>;
 		cam_vaf-supply = <&pm8994_l19>;
 		cam_vois-supply = <&pm8994_l23>;
 		qcom,cam-vreg-name = "cam_vaf", "cam_vois";
@@ -103,6 +104,7 @@
 		reg = <0x0>;
 		compatible = "qcom,ois";
 		qcom,cci-master = <0>;
+		qcom,i2c-freq-mode = <1>;
 		cam_vaf-supply = <&pm8994_l19>;
 		cam_vois-supply = <&pm8994_l23>;
 		qcom,cam-vreg-name = "cam_vaf", "cam_vois";
@@ -211,6 +213,7 @@
 		compatible = "qcom,eeprom";
 		qcom,slave-addr = <0xa0>;
 		qcom,cci-master = <0>;
+		qcom,i2c-freq-mode = <1>;
 		qcom,num-blocks = <1>;
 		qcom,page0 = <0 0 0 0 0 0>;
 		qcom,poll0 = <0 0 0 0 0 0>;
