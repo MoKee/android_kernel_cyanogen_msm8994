@@ -22,7 +22,11 @@
 #include <linux/usb/otg.h>
 #include "power.h"
 
+#ifdef CONFIG_MACH_PM9X
+#define DWC3_IDEV_CHG_MAX 2000
+#else
 #define DWC3_IDEV_CHG_MAX 1500
+#endif
 #define DWC3_HVDCP_CHG_MAX 1800
 
 /*
