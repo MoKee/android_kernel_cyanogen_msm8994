@@ -1230,6 +1230,9 @@ enum battchg_enable_reason {
 	REASON_BATTCHG_USER		= BIT(0),
 	/* battery charging disabled while loading battery profiles */
 	REASON_BATTCHG_UNKNOWN_BATTERY	= BIT(1),
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
+	REASON_BATTCHG_JEITA = BIT(2),
+#endif
 };
 
 static struct power_supply *get_parallel_psy(struct smbchg_chip *chip)
@@ -4504,11 +4507,17 @@ static irqreturn_t batt_hot_handler(int irq, void *_chip)
 		get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
 
 		if(bat_temp_now > BATT_HOT_RECHARGING_THRESHOLD) {
-			smbchg_battchg_en(chip, 0, REASON_BATTCHG_USER, &unused);
+			smbchg_battchg_en(chip, 0, REASON_BATTCHG_JEITA, &unused);
 			chip->hot_recharging_en = 0;
 			smbchg_source_stay_awake(&chip->hot_recharging_wakeup_source);
 			pr_smb(PR_STATUS,"[JEITA] start batt hot recharing schedule, temp  %d\n", bat_temp_now);
 			schedule_delayed_work(&chip->hot_recharging_det_work, msecs_to_jiffies(HOT_RECHARGING_WORK_MS));
+		} else {
+			chip->hot_recharging_en = 1;
+			pr_smb(PR_STATUS,"[JEITA] batt hot recharing begin since temp suddently falls , chip->hot_recharging_en = %d, temp  %d\n", 
+				chip->hot_recharging_en, bat_temp_now);
+			if (chip->psy_registered)
+				power_supply_changed(&chip->batt_psy);
 		}
 	} else {
 		smbchg_source_relax(&chip->hot_recharging_wakeup_source);
@@ -4540,7 +4549,7 @@ static void smbchg_hot_recharging_det_work(struct work_struct *work)
 		get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
 		if(bat_temp_now <= BATT_HOT_RECHARGING_THRESHOLD) {
 			//recharging enable while battery temp below 50 degree
-			smbchg_battchg_en(chip, 1, REASON_BATTCHG_USER, &unused);
+			smbchg_battchg_en(chip, 1, REASON_BATTCHG_JEITA, &unused);
 			chip->hot_recharging_en = 1;
 			cancel_delayed_work(&chip->hot_recharging_det_work);
 			smbchg_source_relax(&chip->hot_recharging_wakeup_source);
@@ -4608,6 +4617,15 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 			smbchg_source_stay_awake(&chip->warm_recharging_wakeup_source);
 			pr_smb(PR_STATUS,"[JEITA] start batt warm recharing schedule, temp %d\n", bat_temp_now);
 			schedule_delayed_work(&chip->warm_recharging_det_work, msecs_to_jiffies(WARM_RECHARGING_WORK_MS));
+		} else {
+			smbchg_float_voltage_set(chip, chip->cfg_vfloat_mv);
+			smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
+			chip->warm_recharging_en = 1;
+			schedule_delayed_work(&chip->parallel_batt_warm_en_work,
+				msecs_to_jiffies(PARALLEL_BATT_WARM_RECHARGING_WORK_MS));
+			if (chip->psy_registered)
+				power_supply_changed(&chip->batt_psy);
+			pr_smb(PR_STATUS,"[JEITA] batt warm recharing begin since temp suddently falls, temp  %d\n", bat_temp_now);
 		}
 	}
 #endif
