@@ -372,6 +372,11 @@ struct device_node *of_batterydata_get_best_profile(
 				delta = abs(batt_ids.kohm[i] - batt_id_kohm);
 				limit = (batt_ids.kohm[i] * id_range_pct) / 100;
 				in_range = (delta <= limit);
+#ifdef CONFIG_MACH_PM9X
+				if (batt_ids.kohm[i] == 0) {
+					in_range = (delta <= limit) || (delta <= 1);
+				}
+#endif
 				/*
 				 * Check if the delta is the lowest one
 				 * and also if the limits are in range
@@ -393,8 +398,13 @@ struct device_node *of_batterydata_get_best_profile(
 	}
 
 	/* check that profile id is in range of the measured batt_id */
+#ifdef CONFIG_MACH_PM9X
+	if (abs(best_id_kohm - batt_id_kohm) >
+			((best_id_kohm * id_range_pct) / 100) && best_id_kohm) {
+#else
 	if (abs(best_id_kohm - batt_id_kohm) >
 			((best_id_kohm * id_range_pct) / 100)) {
+#endif
 		pr_err("out of range: profile id %d batt id %d pct %d",
 			best_id_kohm, batt_id_kohm, id_range_pct);
 		return NULL;
