@@ -196,8 +196,8 @@
 
 #ifdef STK_TUNE0
 	#define STK_MAX_MIN_DIFF	500
-	#define STK_LT_N_CT	200
-	#define STK_HT_N_CT	280
+	#define STK_LT_N_CT     600
+	#define STK_HT_N_CT     840
 	//STK add for CCI start 20130112
 	#define MAX_COMPARE(a,b) (a>b)? a:b
 
