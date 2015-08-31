@@ -1151,7 +1151,6 @@
 	qcom,hot-bat-decidegc = <570>;
 	qcom,cold-bat-decidegc = <0>;
 	qcom,thermal-coefficients = [C5 86 BE 50 D1 37];
-	/delete-property/ qcom,resume-soc;
 };
 
 &pmi8994_haptics {
