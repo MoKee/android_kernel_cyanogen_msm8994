@@ -1161,6 +1161,7 @@
 	qcom,ext-sense-type;
 	qcom,fg-cc-cv-threshold-mv = <4390>;
 	qcom,fg-cutoff-voltage-mv = <3300>;
+	qcom,fg-delta-soc = <0>;
 	qcom,fg-iterm-ma = <250>;
 	qcom,warm-bat-decidegc = <450>;
 	qcom,cool-bat-decidegc = <200>;
