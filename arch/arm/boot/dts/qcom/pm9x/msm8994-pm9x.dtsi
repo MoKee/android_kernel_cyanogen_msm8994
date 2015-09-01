@@ -399,6 +399,17 @@
 		};
 	};
 
+	silead_fp_int_pin {
+		qcom,pins = <&gp 90>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "silead_fp_irq";
+		silead_fp_int_default: silead_fp_int_default {
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+
 	hall_int_pin {
 		qcom,pins = <&gp 41>;
 		qcom,pin-func = <0>;
@@ -1120,14 +1131,19 @@
 &spi_26 {
 	silead,silead_fp@0 {
 		compatible = "silead_fp";
-		pinctrl-names = "fp_active","fp_suspend";
+		pinctrl-names = "fp_active","fp_suspend", "fp_interrupt";
 		pinctrl-0 = <&silead_fp_shutdown_active>;
 		pinctrl-1 = <&silead_fp_shutdown_suspend>;
+		pinctrl-2 = <&silead_fp_int_default>;
 		vio-supply = <&pm8994_lvs2>;
 		vdd-supply = <&pm8994_l18>;
 		reg = <0>;
 		spi-max-frequency = <50000000>;
 		shutdown_gpio = <&msm_gpio 89 0>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <90 0x3>;
+		linux,gpio-int = <&msm_gpio 90 0x3>;
+		linux,wakeup;
 	};
 };
 
