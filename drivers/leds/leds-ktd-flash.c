@@ -827,6 +827,8 @@ static int ktd_dev_pm_resume(struct device *dev)
 			gpio_request_one(flash_led->flash_node[i].flash_ctrl->gpio, GPIOF_OUT_INIT_HIGH, flash_led->flash_node[i].flash_ctrl->label);
 			gpio_request_one(flash_led->flash_node[i].flash_strobe->gpio, GPIOF_OUT_INIT_LOW, flash_led->flash_node[i].flash_strobe->label);
 			gpio_request_one(flash_led->flash_node[i].flash_tx->gpio, GPIOF_OUT_INIT_LOW, flash_led->flash_node[i].flash_tx->label);
+			led_ktd_flash_senddata(&flash_led->flash_node[i], 0x00); //Disable LVP
+			led_ktd_flash_set_min_current(&flash_led->flash_node[i], 0x07);
 			flash_led->flash_node[i].suspend_state = 0;
 		}
 	}
