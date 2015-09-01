@@ -116,8 +116,8 @@ struct spi_ioc_transfer {
 #define SPI_ASYNC_READ_PRE   _IOR(SPI_IOC_MAGIC, 30, __u32)
 #define SPI_ASYNC_READ       _IOR(SPI_IOC_MAGIC, 40, __u32)
 #define SPI_GET_BUFFER_SIZE  _IOR(SPI_IOC_MAGIC, 50, __u32)
-#define SPI_HW_RESET         _IOR(SPI_IOC_MAGIC, 70, __u32) // 20150414 by silead
-
+#define SPI_HW_RESET         _IOW(SPI_IOC_MAGIC, 70, __u32) // 20150414 by silead // 20150817 Kylix modified
+#define SPI_HW_SHUTDOWN			_IOW(SPI_IOC_MAGIC, 71, __u32)  //silead 0831
 /* Read / Write of SPI mode (SPI_MODE_0..SPI_MODE_3) */
 #define SPI_IOC_RD_MODE			_IOR(SPI_IOC_MAGIC, 1, __u8)
 #define SPI_IOC_WR_MODE			_IOW(SPI_IOC_MAGIC, 1, __u8)
@@ -138,6 +138,8 @@ struct spi_ioc_transfer {
 /* ioctl  reset shutdown hight or low */
 #define SPI_IOC_RD_RESET_H		_IOR(SPI_IOC_MAGIC, 5, __u32)
 #define SPI_IOC_WR_RESET_L		_IOW(SPI_IOC_MAGIC, 5, __u32)
+
+#define SPI_HW_IRQ_ENBALE		_IOW(SPI_IOC_MAGIC, 80, __u32) /* 20150810 by silead */
 //////@ 2015 add by joker
 // 20150414 by silead
 #define SL_HEAD_SIZE 3
@@ -153,6 +155,7 @@ struct spi_ioc_transfer {
 //#define LSB_TO_MSB // Kylix, only test,  20150424
 #define VM_RESERVED (VM_DONTEXPAND | VM_DONTDUMP) //silead
 #define GSL6313_POWER_CTRL 1 // add silead 20150421 for compal
+#define GSL6313_INTERRUPT_CTRL 1 // jonny_test wake-up implement
 struct spidev_data {
     dev_t			devt;
     spinlock_t		spi_lock;
@@ -185,6 +188,15 @@ struct spidev_data {
     atomic_t is_cal_mode;
     atomic_t is_suspend;
 	u32 shutdown_gpio;
+    /* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+    struct workqueue_struct *int_wq;
+    struct work_struct int_work;
+    u32 int_wakeup_gpio; 
+    int int_irq; 
+    bool wakeup;
+#endif
+    /* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
     //jonny S
     /* power control */
 #if GSL6313_POWER_CTRL //Kylix
@@ -197,6 +209,11 @@ struct spidev_data {
     struct pinctrl_state *pinctrl_state_active;
     struct pinctrl_state *pinctrl_state_suspend;
     /* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
+    /* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+    struct pinctrl_state *pinctrl_state_interrupt;
+#endif
+    /* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
 };
 // 20150414 by silead
 

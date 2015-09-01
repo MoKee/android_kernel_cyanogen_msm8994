@@ -45,6 +45,8 @@
 #include <linux/seq_file.h>
 
 #include <linux/jiffies.h>
+#include <linux/timex.h>  //silead 0826
+#include <linux/timer.h>  //silead 0826
 #include <linux/wakelock.h>
 #define VERBOSE  0
 #include <asm/uaccess.h>
@@ -71,7 +73,7 @@
  * particular SPI bus or device.
  */
 //#define SPIDEV_MAJOR			153	/* assigned */
-#define N_SPI_MINORS			32	/* ... up to 256 */
+#define N_SPI_MINORS 32	/* ... up to 256 */
 
 
 //#define LSB_TO_MSB
@@ -92,6 +94,10 @@
 #define PINCTRL_STATE_ACTIVE    "fp_active"
 #define PINCTRL_STATE_SUSPEND   "fp_suspend"
 /* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
+
+#ifdef GSL6313_INTERRUPT_CTRL
+#define PINCTRL_STATE_INTERRUPT "fp_interrupt"  /* [PM99] BUG#xxx Jonny_Chan IRQ wake-up control */
+#endif
 
 static DECLARE_BITMAP(minors, N_SPI_MINORS);
 /* Bit masks for spi_device.mode management.  Note that incorrect
@@ -114,6 +120,7 @@ static DECLARE_BITMAP(minors, N_SPI_MINORS);
 /// @ 2015 add by joker
 static int spidev_reset_low(void);
 static int spidev_reset_hight(void);
+static int irq_counter = 0;
 /// @ 2015 add by joker
 //static void dump_g_addr(char *ddr) //Kylix
 //{
@@ -267,6 +274,21 @@ static int silead_fp_pinctrl_init(struct spidev_data *data)
         goto err_pinctrl_lookup;
     }
 
+/* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+    data->pinctrl_state_interrupt
+        = pinctrl_lookup_state(data->fp_pinctrl,
+            PINCTRL_STATE_INTERRUPT);
+    if (IS_ERR_OR_NULL(data->pinctrl_state_interrupt)) {
+        ret = PTR_ERR(data->pinctrl_state_interrupt);
+        dev_err(&data->spi->dev,
+            "Can not lookup %s pinstate %d\n",
+            PINCTRL_STATE_INTERRUPT, ret);
+        goto err_pinctrl_lookup;
+    }
+#endif
+/* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
+
     printk("%s --\n", __func__);
     return 0;
 
@@ -277,6 +299,70 @@ err_pinctrl_get:
     return ret;
 }
 /* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
+/* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+/*--------------------------------------------------------------------------
+ * work function
+ *--------------------------------------------------------------------------*/
+ #ifdef GSL6313_INTERRUPT_CTRL
+static void finger_interrupt_work(struct work_struct *work)
+{
+	//int value; //Silead 0824
+	//struct spidev_data *spidev = container_of(work, struct spidev_data, int_work.work);  //for delay work
+	struct spidev_data *spidev = container_of(work, struct spidev_data, int_work);
+
+ 	//silead 0831 char *event[2] = {"silead_fp", NULL};
+	char*   env_ext[2] = {"SILEAD_FP_EVENT=IRQ", NULL};
+	//printk("irq bottom half spidev_irq_work enter \n"); Silead 0824
+        //msleep(100); //jonny 0820 0819
+	kobject_uevent_env(&spidev->spi->dev.kobj, KOBJ_CHANGE, env_ext ); 
+	
+	//mutex_lock(&hsppad->lock);
+	//printk("%s", __func__);
+	//msleep(200);
+	//value = gpio_get_value_cansleep(spidev->int_wakeup_gpio); Silead 0824
+	//printk("[%s] E IRQ %d , GPIO %d state is %d\n", __func__, spidev->int_irq,spidev->int_wakeup_gpio,value); Silead 0824
+
+	//enable_irq(spidev->int_irq); //jonny_test
+	//enable_irq_wake(spidev->int_irq);
+	//__pm_relax(spidev->spi->dev.power.wakeup);
+
+	//mutex_unlock(&hsppad->lock);
+}
+
+static irqreturn_t finger_interrupt_handler(int irq, void *dev)
+{
+	int value;
+        struct timex txc; //silead 0826
+	struct spidev_data *spidev = dev;
+        do_gettimeofday(&(txc.time)); //silead 0826
+        printk("txc.time.tv_sec=%ld,txc.time.tv_usec=%ld \n",txc.time.tv_sec,txc.time.tv_usec);  //silead 0826
+        //printk("[%s] S interrupt top half has entered!\n",__func__); //Silead 0825
+	//disable_irq(irq);
+        wake_lock_timeout(&spidev->wake_lock, 10*HZ);  //jonny 0820 0819
+	disable_irq_nosync(irq);  //re-enable
+        irq_counter--;  //jonny 0820
+	//disable_irq_wake(irq);
+	value = gpio_get_value_cansleep(spidev->int_wakeup_gpio);
+	//__pm_stay_awake(spidev->spi->dev.power.wakeup);
+
+	//printk("[%s]S IRQ %d , irq_counter is %d GPIO %d state is %d\n", __func__, irq, irq_counter,spidev->int_wakeup_gpio,value); Silead 0824
+	//printk("S [%s]  state is %d\n", __func__, value);
+	//msleep(2000);
+	//value = gpio_get_value_cansleep(spidev->int_wakeup_gpio);
+	//printk("E[%s] IRQ %d , GPIO %d state is %d\n", __func__, irq,spidev->int_wakeup_gpio,value);
+
+	//mutex_lock(&spidev->buf_lock);  //
+		//schedule_delayed_work(&spidev->int_work, msecs_to_jiffies(2000));
+	queue_work(spidev->int_wq,&spidev->int_work);
+	//mutex_unlock(&spidev->buf_lock);
+	
+	//enable_irq_wake(irq);
+	//printk("[%s] E \n",__func__); Silead 0824
+	//__pm_relax(spidev->spi->dev.power.wakeup);
+	return IRQ_HANDLED;
+}
+#endif
+/* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
 #define SL_READ  0x00 //read flags
 #define SL_WRITE 0xFF //write flags
 static void spidev_work(struct work_struct *work);
@@ -898,6 +984,8 @@ static int spidev_mmap(struct file* filep, struct vm_area_struct *vma)
 }
 static int spidev_reset_hw(struct spidev_data *spidev)
 {
+int rc = 0;
+int value = 2;
 //   //soft reset;
 //   spidev_write_reg(fp_spidev, (0x000000E0 >>7), 0xF0);
 //   spidev_write_reg(fp_spidev, 0x00000088, 0x000000E0%0x80);
@@ -908,8 +996,53 @@ static int spidev_reset_hw(struct spidev_data *spidev)
 //       s3c2410_gpio_setpin(spidev->reset_hw_gpio, 1);
 //   }
 //   dev_info(&spidev->spi->dev, "Reset silead hw\n");
+
+    /* 20150817 Kylix add start */
+printk("[%s] S\n", __func__);
+    //setup gpio mode
+    //setup gpio output high
+    //pull gpio output low;
+        if(spidev->fp_pinctrl)
+        {	
+            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_suspend);
+            if(rc)
+                dev_err(&spidev->spi->dev, "[silead]cannot get suspend pinctrl state\n");
+        }
+    mdelay(5);
+	value = gpio_get_value_cansleep(spidev->shutdown_gpio);
+	printk("[%s] GPIO %d state is %d\n", __func__,spidev->shutdown_gpio,value);
+
+    //pull gpio output high;
+        if(spidev->fp_pinctrl)
+        {
+            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_active);
+            if(rc)
+                dev_err(&spidev->spi->dev, "[silead]cannot get active pinctrl state\n");
+        }
+    mdelay(5);
+	value = gpio_get_value_cansleep(spidev->shutdown_gpio);
+	printk("[%s] GPIO %d state is %d\n", __func__,spidev->shutdown_gpio,value);
+printk("[%s] E\n", __func__);
+    /* 20150817 Kylix add end */
+
      return 0; //Kylix
 }
+
+static int spidev_shutdown_hw(struct spidev_data *spidev)
+{
+//   //soft reset;
+//   spidev_write_reg(fp_spidev, (0x000000E0 >>7), 0xF0);
+//   spidev_write_reg(fp_spidev, 0x00000088, 0x000000E0%0x80);
+//   // hw reset  
+//   if (spidev->reset_hw_gpio){
+//       s3c2410_gpio_setpin(spidev->reset_hw_gpio, 0);
+//       mdelay(5);
+//       s3c2410_gpio_setpin(spidev->reset_hw_gpio, 1);
+//   }
+//   dev_info(&spidev->spi->dev, "Reset silead hw\n");
+    return 0;
+}
+
 static long
 spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
@@ -952,10 +1085,12 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         return -EBUSY;
     }
      
+    /* 20150820 Kylix remove start */
     if (atomic_read(&spidev->is_suspend)){
         dev_dbg(&spidev->spi->dev, "device is suspend\n");
         return -EBUSY;
     }
+    /* 20150820 Kylix remove end */
 
     if (spi == NULL){
         return -ESHUTDOWN;
@@ -973,6 +1108,11 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
     case SPI_HW_RESET :
          spidev_reset_hw(spidev);
          break;
+    //silead 0831
+    case SPI_HW_SHUTDOWN:
+		spidev_shutdown_hw(spidev);
+		break;
+     //silead 0831 
     case SPI_SET_WAKE_UP:
         retval =  __get_user(tmp,  (u32 __user *)arg);
         dev_dbg(&spi->dev, "SPI_SET_WAKE_UP:\n");
@@ -1109,6 +1249,32 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		break;		
 /////////@ 2015 add by joker
+    	case SPI_HW_IRQ_ENBALE:
+		//FP_DBUG("%s:%lu", __FUNCTION__, arg);
+                //printk("%s:%lu \n", __func__, arg); //jonny 0820 Silead 0824
+		if(arg)
+		{
+			//int mode
+			//FP_DBUG("int mode");
+                        //printk("int mode, irq_counter is %d\n",irq_counter); //jonny 0820 Silead 0824
+			sl_fp_write(fp_spidev,0xbf,0);	
+                        if (!irq_counter)  //jonny 0820
+                        {
+			enable_irq(spidev->int_irq);//BUG#xxx
+                        irq_counter++;
+                        //printk("enable_irq, irq_counter is %d\n",irq_counter); //jonny 0820 Silead 0824
+                        }
+
+		}
+		else
+		{
+			//polling mode
+			//disable_irq_nosync(spidev->int_irq);//re-enable							
+			//FP_DBUG("polling mode");
+                        //printk("polling mode\n"); //jonny 0820 Silead 0824
+		}
+		break;
+    /* 20150810 by silead end */
 
     default:
         /* segmented and/or full-duplex I/O request */
@@ -1260,6 +1426,10 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
     int			status;
     unsigned long		minor, page;
     int			error; //jonny
+#ifdef GSL6313_INTERRUPT_CTRL
+    int 	irq_flags; 	/* [PM99] BUG#xxx Jonny_Chan IRQ wake-up control */
+    unsigned int tmp;
+#endif
     
     printk("%s  S \n", __func__);  //jonny add
     
@@ -1310,6 +1480,17 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
             dev_err(&spi->dev,
                 "[silead]failed to select pin to active state");
         }
+
+	/* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+        error = pinctrl_select_state(spidev->fp_pinctrl,
+                    spidev->pinctrl_state_interrupt);
+        if (error < 0) {
+            dev_err(&spi->dev,
+                "[silead]failed to select pin to interrupt state");
+        }
+#endif
+	/* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
     }
 /* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
 #ifdef CONFIG_OF
@@ -1322,10 +1503,51 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
 			dev_err(&spi->dev,
 					"reset gpio request failed");
 		} else {
+                        //gpio_set_value_cansleep(spidev->shutdown_gpio, 1);
+                        //gpio_direction_output(spidev->shutdown_gpio, 1);
 			dev_err(&spi->dev,
 					"reset gpio request success"); // add silead 20150330
 		}
 	}
+/* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+	irq_flags = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
+
+	//irq_flags = IRQF_TRIGGER_RISING  | IRQF_ONESHOT;
+	//irq_flags = IRQF_TRIGGER_FALLING  | IRQF_ONESHOT;
+	spidev->wakeup = of_property_read_bool(spi->dev.of_node, "linux,wakeup");
+	
+	//spidev->int_wakeup_gpio = of_get_named_gpio(spi->dev.of_node,"linux,gpio-int",0);
+	spidev->int_wakeup_gpio = of_get_named_gpio_flags(spi->dev.of_node,"linux,gpio-int",0,&tmp);
+
+	if (gpio_is_valid(spidev->int_wakeup_gpio)) {
+		status = gpio_request_one(spidev->int_wakeup_gpio, (GPIOF_DIR_IN | GPIOF_INIT_LOW),
+				"silead_int_gpio");
+		if (status) {
+			dev_err(&spi->dev,
+					"int gpio request failed");
+		} else {
+			dev_err(&spi->dev,
+					"int gpio request success"); 
+		}
+	}
+
+	spidev->int_irq= gpio_to_irq(spidev->int_wakeup_gpio);
+	status = devm_request_threaded_irq(&spi->dev, spidev->int_irq, NULL,
+			finger_interrupt_handler,
+			irq_flags, "silead_finger", spidev);
+	if (status < 0) {
+		dev_err(&spi->dev, "request irq failed : %d\n", spidev->int_irq);
+		//goto free_gpio;
+	}
+
+	device_init_wakeup(&spi->dev, spidev->wakeup);
+	enable_irq_wake(spidev->int_irq);
+        irq_counter++;
+	//disable_irq_nosync(spidev->int_irq);  //jonny 0820
+	printk("%s  Interrupt  %d  wake up is %d irq flag is 0x%X irq_counter is %d\n", __func__,spidev->int_irq, spidev->wakeup,irq_flags,irq_counter);  //jonny add
+#endif
+/* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
 #endif
 
 	printk("%s  S3 \n", __func__);  //jonny add
@@ -1338,6 +1560,12 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
 	wake_lock_init(&spidev->wake_lock, WAKE_LOCK_SUSPEND, "silead_wake_lock");
 	spidev->wqueue = create_singlethread_workqueue("silead_wq");
 
+	/* [PM99] S- BUG#xxx Jonny_Chan IRQ wake-up control */
+#ifdef GSL6313_INTERRUPT_CTRL
+	spidev->int_wq= create_singlethread_workqueue("int_silead_wq");
+	INIT_WORK(&spidev->int_work, finger_interrupt_work);
+#endif
+	/* [PM99] E- BUG#xxx Jonny_Chan IRQ wake-up control */
 	printk("%s  S4 \n", __func__);  //jonny add
 	
 	spidev->max_frame_num = SL_MAX_FRAME_NUM;
@@ -1387,7 +1615,7 @@ static int /*__devinit*/ spidev_probe(struct spi_device *spi) //Kylix
 	fp_spidev = spidev;
         sl_proc_init(spidev);
         atomic_set(&spidev->is_cal_mode, 0);///default is enroll mode
-        atomic_set(&spidev->is_suspend, 0);///default is enroll mode
+        //atomic_set(&spidev->is_suspend, 0);///default is enroll mode // 20150820 Kylix remove
 
 	printk("%s  E \n", __func__);  //jonny add
 	return status;
@@ -1446,54 +1674,38 @@ static int spidev_reset_hight(void)
 
 static int spidev_suspend(struct spi_device *spi, pm_message_t mesg)
 {
-    struct spidev_data	*spidev = spi_get_drvdata(spi);
-    int rc=0;// [PM99]  BUG#274 Jonny_Chan shutdown active/suspend
+    //struct spidev_data	*spidev = spi_get_drvdata(spi);  //jonny 0820
 
     printk("%s  S \n", __func__);  // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
-    
+
+#if 0
     if (spidev->wake_up_gpio) {
         enable_irq(spidev->irq);
     } else {
         disable_irq(spidev->irq);
     }
-
-/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
-        if(spidev->fp_pinctrl)
-        {	
-            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_suspend);
-            if(rc)
-                dev_err(&spi->dev, "[silead]cannot get suspend pinctrl state\n");
-        }
-/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */		
-    atomic_set(&spidev->is_suspend, 1);
+#endif
+		
+    //atomic_set(&spidev->is_suspend, 1); // 20150820 Kylix remove
 
     printk("%s  E \n", __func__);  // [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend
     return 0;
 }
 static int spidev_resume(struct spi_device *spi)
 {
-    struct spidev_data	*spidev = spi_get_drvdata(spi);
-    int rc=0;// [PM99] BUG#274 Jonny_Chan shutdown active/suspend
+    //struct spidev_data	*spidev = spi_get_drvdata(spi);  //jonny 0820
 
     printk("%s  S \n", __func__); // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
-    
+
+#if 0    
     if (spidev->wake_up_gpio) {
         enable_irq(spidev->irq);
     } else {
         disable_irq(spidev->irq);
     }
+#endif
 
-/* [PM99] S- BUG#274 Jonny_Chan shutdown active/suspend */
-        if(spidev->fp_pinctrl)
-        {
-            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_active);
-            if(rc)
-                dev_err(&spi->dev, "[silead]cannot get active pinctrl state\n");
-        }
-	
-/* [PM99] E- BUG#274 Jonny_Chan shutdown active/suspend */
-
-    atomic_set(&spidev->is_suspend, 0);
+    //atomic_set(&spidev->is_suspend, 0); // 20150820 Kylix remove
     printk("%s  E \n", __func__); // [PM99] BUG#274 Jonny_Chan shutdown active/suspend
     return 0;
 }
