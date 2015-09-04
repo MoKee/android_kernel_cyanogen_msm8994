@@ -941,7 +941,7 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 	hang_up_hthd = ps_data->ps_thd_h;
 	hang_up_lthd = ps_data->ps_thd_l;
 	
-	if(cci_ps_low_thd==0 || cci_ps_high_thd==0)
+	if(cci_ps_low_thd==0 || cci_ps_high_thd==0 || cci_ps_high_thd>65535 || cci_ps_low_thd >65535 ||cci_result_ct >65535)
 	{
 		//if((2*cci_result_ct-STK_LT_N_CT) > hang_up_hthd)
 		//{
@@ -2155,31 +2155,35 @@ static ssize_t ps_CCI_cali_BC_ct_show(struct device *dev, struct device_attribut
 	Diff_ThdL_CT = cci_ps_low_thd - cci_result_ct;
 	//when IT=0x73 and LED CURRENT=100mA, (ps_close-ps_ct) should be bigger than 75
 	//Optical team change the range from 75 to 100. 20130117
-	if(Diff_ThdL_CT > 200 && cci_result_ct<=5000 ){
-		//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
-		cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT*14/10; //*****************This is N2F value*************** set (L-CT)*1.4+CT=H
+	if(cci_ps_low_thd <=65535 && cci_result_ct<=65535 && cci_result_ct!=0){
+		if(Diff_ThdL_CT > 200 && cci_result_ct<=5000 ){
+			//cci_ps_low_thd = cci_result_ct + Diff_ThdH_CT/2; //*****************This is N2F value*************** 5:5 for H/L/CT
+			cci_ps_high_thd = cci_result_ct + Diff_ThdL_CT*14/10; //*****************This is N2F value*************** set (L-CT)*1.4+CT=H
 
-		//add for FTM interrupt check 20130424 start
-		printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_ct_show() cci_ps_high_thd = %d, cci_ps_low_thd = %d\n", __FUNCTION__, cci_ps_high_thd, cci_ps_low_thd);
-		ps_data->ps_thd_h = cci_ps_high_thd;
-		ps_data->ps_thd_l = cci_ps_low_thd;				
+			//add for FTM interrupt check 20130424 start
+			printk(KERN_INFO "%s: [Colby] ps_CCI_cali_BC_ct_show() cci_ps_high_thd = %d, cci_ps_low_thd = %d\n", __FUNCTION__, cci_ps_high_thd, cci_ps_low_thd);
+			ps_data->ps_thd_h = cci_ps_high_thd;
+			ps_data->ps_thd_l = cci_ps_low_thd;				
 
-		stk3x1x_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
-		stk3x1x_set_ps_thd_l(ps_data, ps_data->ps_thd_l);
-		//add for FTM interrupt check 20130424  end
+			stk3x1x_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
+			stk3x1x_set_ps_thd_l(ps_data, ps_data->ps_thd_l);
+			//add for FTM interrupt check 20130424  end
 
-		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT successfully----------------\n");
-		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
-		result = true;
+			printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT successfully----------------\n");
+			printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
+			result = true;
+			}
+		else{
+			cci_ps_high_thd = 0;
+			printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT fail----------------\n");
+			printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
+			result = false;
+			}
 		}
-	else{
-		cci_ps_high_thd = 0;
-		printk(KERN_ERR "[Colby][STK]---------------Test PS Black card CT fail----------------\n");
-		printk(KERN_ERR "[Colby][STK]cci_ps_high_thd = %d\n", cci_ps_high_thd);
-		result = false;
-		}
-
-	printk(KERN_ERR "[Colby][STK]cci_result_ct = %d, Diff_ThdL_CT = %d, cci_ps_high_thd = %d\n", cci_result_ct, Diff_ThdL_CT, cci_ps_high_thd);
+		else{
+			result = false;
+		}		
+	printk(KERN_ERR "[Colby][STK]%s : cci_result_ct = %d, Diff_ThdL_CT = %d, cci_ps_high_thd = %d\n", result ? "SUCCESS" : "FAIL",cci_result_ct, Diff_ThdL_CT, cci_ps_high_thd);
 
 	return scnprintf(buf, PAGE_SIZE, "%s: cci_result_ct = %d, cci_ps_high_thd = %d \n",  result ? "SUCCESS" : "FAIL", cci_result_ct, cci_ps_high_thd);
 }
@@ -2213,15 +2217,16 @@ static ssize_t ps_CCI_test_GC_10mm_show(struct device *dev, struct device_attrib
 	struct stk3x1x_data *ps_data =  dev_get_drvdata(dev);	
 	uint32_t reading;
 	uint32_t test_ps_code;
-	bool ps_test_cover;
+	bool ps_test_cover=false;
 	//get ps code for 5 times
-	printk(KERN_ERR "%s:[Colby][STK]Start testing BC...\n", __func__);
-	reading = stk3x1x_get_ps_reading_AVG(ps_data, 5);
 	
+	reading = stk3x1x_get_ps_reading_AVG(ps_data, 5);
+	printk(KERN_ERR "%s:[Colby][STK]Start testing BC...test value = %d\n", __func__,reading);
 	test_ps_code = reading;
 
+
 	printk(KERN_ERR "%s:[Colby][STK]ps_CCI_test_BC_show() CCI_FTM_INTERRUPT = %d\n", __func__, CCI_FTM_INTERRUPT); //add for FTM interrupt check 20130424 start
-	if(test_ps_code >= cci_ps_high_thd){
+	if(test_ps_code >= cci_ps_high_thd && test_ps_code<=65535){
 		ps_test_cover = true;
 		cci_ps_cover = test_ps_code;
 		//add for FTM interrupt check 20130424 start
@@ -2269,12 +2274,13 @@ static ssize_t als_CCI_test_Light_show(struct device *dev, struct device_attribu
 	msleep(150);
 	//als_reading = stk3x1x_get_als_reading(ps_data);
 	als_reading = stk3x1x_get_als_reading_AVG(ps_data, 5);
+
 	mutex_lock(&ps_data->io_lock);
 	printk(KERN_ERR "%s:[#23][STK]als_reading = %d\n", __func__, als_reading);
 	cci_als_value = stk_alscode2lux(ps_data, als_reading);
 	//cci_als_value = als_reading; //return raw data only
 	mutex_unlock(&ps_data->io_lock);
-	if(cci_als_value>=255&&cci_als_value<=345)
+	if(cci_als_value>=255&&cci_als_value<=345&&als_reading<=65535)
 		result = true;
 	printk(KERN_ERR "%s:[#23][STK]Start testing light done!!! cci_als_value = %d lux, cci_als_test_adc = %d Result = %s\n", __func__, cci_als_value,als_reading, result ? "SUCCESS" : "FAIL");
 	return scnprintf(buf, PAGE_SIZE, "%s: cci_als_value = %d lux, cci_als_test_adc = %d \n", result ? "SUCCESS" : "FAIL",cci_als_value,als_reading);
@@ -2297,7 +2303,7 @@ static ssize_t als_CCI_cali_Light_show(struct device *dev, struct device_attribu
 	//cci_als_value_cali = als_reading; //return raw data only, ADC code
 
 	//compute transmittance for ALS calibration start
-	if(((cci_als_value_cali * ps_data->als_transmittance)/500) > 0){ //if cci_als_value_cali = 0, the cci_transmittance_cali will be always 0, so skip it.
+	if(((cci_als_value_cali * ps_data->als_transmittance)/500) > 0 && (cci_als_value_cali_adc <=65535)){ //if cci_als_value_cali = 0, the cci_transmittance_cali will be always 0, so skip it.
 		cci_transmittance_cali = (cci_als_value_cali * ps_data->als_transmittance)/500; //transmittance for cali
 		ps_data->als_transmittance = cci_transmittance_cali; // writ back to als_transmittance
 		//calculate lux base on calibrated transmittance
@@ -2663,7 +2669,7 @@ static int stk_ps_tune_zero_func_fae(struct stk3x1x_data *ps_data)
 		//STK add for CCI end 20130112
 
 		//To avoid Auto Calibration CT is too big - 20140805
-		if(cci_ps_cover!=0 && cci_result_ct!=0){
+		if(cci_ps_cover!=0 && cci_result_ct!=0 && cci_result_ct<=65535 && cci_ps_cover<=65535 ){
 			//printk(KERN_INFO "%s:============START CHECK IF CT IS TOO BIG============\n", __func__);
 			printk(KERN_INFO "%s:MAX Compare cci_ps_cover(%d) and 2*CT(%d)\n", __func__, cci_ps_cover, 2*cci_result_ct);
 			MAX_CT = MAX_COMPARE(cci_ps_cover, 2*cci_result_ct);
@@ -2675,11 +2681,11 @@ static int stk_ps_tune_zero_func_fae(struct stk3x1x_data *ps_data)
 			//printk(KERN_INFO "%s:=========================END========================\n", __func__);
 		}
 		else
-			printk(KERN_ERR "%s: NO cci_ps_cover and cci_result_ct data!!\n", __func__);
+			printk(KERN_ERR "%s: Wrong cci_ps_cover =%d ,cci_result_ct data= %d !!\n", __func__,cci_ps_cover,cci_result_ct);
 		//
 		
 		//STK add for CCI start 20130112
-		if(cci_ps_low_thd==0 || cci_ps_high_thd==0)
+		if(cci_ps_low_thd==0 || cci_ps_high_thd==0 ||cci_ps_low_thd>65535 ||cci_ps_high_thd>65535 || cci_result_ct>65535)
 		{
 			//printk(KERN_INFO "%s: [stk] use STK default value\n", __FUNCTION__);		
 			printk(KERN_INFO "[stk] use STK default value\n");		
