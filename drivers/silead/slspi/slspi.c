@@ -1030,6 +1030,18 @@ printk("[%s] E\n", __func__);
 
 static int spidev_shutdown_hw(struct spidev_data *spidev)
 {
+int rc = 0;
+int value = 2;
+printk("[%s] S\n", __func__);
+        if(spidev->fp_pinctrl)
+        {	
+            rc = pinctrl_select_state(spidev->fp_pinctrl, spidev->pinctrl_state_suspend);
+            if(rc)
+                dev_err(&spidev->spi->dev, "[silead]cannot get suspend pinctrl state\n");
+        }
+    mdelay(5);
+	value = gpio_get_value_cansleep(spidev->shutdown_gpio);
+	printk("[%s] GPIO %d state is %d\n", __func__,spidev->shutdown_gpio,value);
 //   //soft reset;
 //   spidev_write_reg(fp_spidev, (0x000000E0 >>7), 0xF0);
 //   spidev_write_reg(fp_spidev, 0x00000088, 0x000000E0%0x80);
