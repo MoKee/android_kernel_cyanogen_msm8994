@@ -106,8 +106,8 @@ const unsigned char MAX_SRCH_MODE = 0x01;
 #define MAX_RDS_FIFO_CNT 25
 
 #ifdef CONFIG_MACH_PM9X
-#define DEFAULT_SNR_TH 1
-#define DEFAULT_RSSI_TH 1
+#define DEFAULT_SNR_TH 2
+#define DEFAULT_RSSI_TH 2
 #else
 #define DEFAULT_SNR_TH 2
 #define DEFAULT_RSSI_TH 7
