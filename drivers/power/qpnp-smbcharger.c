@@ -293,6 +293,8 @@ enum smbchg_wa {
 static struct smbchg_chip *g_chip = NULL;
 #endif
 
+#define SMBCHG_BATT_OV_WA BIT(3)
+
 enum print_reason {
 	PR_REGISTER	= BIT(0),
 	PR_INTERRUPT	= BIT(1),
@@ -5224,6 +5226,7 @@ static inline int get_bpd(const char *name)
 #define CHG_EN_SRC_BIT			BIT(7)
 #define CHG_EN_COMMAND_BIT		BIT(6)
 #define P2F_CHG_TRAN			BIT(5)
+#define CHG_BAT_OV_ECC			BIT(4)
 #define I_TERM_BIT			BIT(3)
 #define AUTO_RECHG_BIT			BIT(2)
 #define CHARGER_INHIBIT_BIT		BIT(0)
@@ -5267,10 +5270,59 @@ static inline int get_bpd(const char *name)
 #define CCMP_CHG_I_BIT		BIT(1)| BIT(0)
 #define CCMP_FV_BIT		BIT(3)| BIT(2)
 #endif
+
+static void batt_ov_wa_check(struct smbchg_chip *chip)
+{
+	int rc;
+	u8 reg;
+
+	/* disable-'battery OV disables charging' feature */
+	rc = smbchg_sec_masked_write(chip, chip->chgr_base + CHGR_CFG2,
+		CHG_BAT_OV_ECC, 0);
+	if (rc < 0) {
+		dev_err(chip->dev, "Couldn't set chgr_cfg2 rc=%d\n", rc);
+		return;
+	}
+
+	/*
+	* if battery OV is set:
+	* restart charging by disable/enable charging
+	*/
+	rc = smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
+	if (rc < 0) {
+		dev_err(chip->dev,
+		"Couldn't read Battery RT status rc = %d\n", rc);
+		return;
+	}
+
+	if (reg & BAT_OV_BIT) {
+		rc = smbchg_charging_en(chip, false);
+		if (rc < 0) {
+			dev_err(chip->dev,
+			"Couldn't disable charging: rc = %d\n", rc);
+			return;
+		}
+
+		/* delay for charging-disable to take affect */
+		msleep(200);
+
+		rc = smbchg_charging_en(chip, true);
+		rc = smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
+		if (rc < 0) {
+			dev_err(chip->dev,
+			"Couldn't read Battery RT status rc = %d\n", rc);
+			return;
+		}
+	}
+}
+
 static int smbchg_hw_init(struct smbchg_chip *chip)
 {
 	int rc, i;
 	u8 reg, mask;
+
+	if (chip->wa_flags & SMBCHG_BATT_OV_WA)
+		batt_ov_wa_check(chip);
 
 	rc = smbchg_read(chip, chip->revision,
 			chip->misc_base + REVISION1_REG, 4);
@@ -6483,6 +6535,10 @@ static int smbchg_probe(struct spmi_device *spmi)
 			"Couldn't initialize regulator rc=%d\n", rc);
 		return rc;
 	}
+
+#ifdef CONFIG_MACH_PM9X
+	chip->wa_flags |=  SMBCHG_BATT_OV_WA;
+#endif
 
 	rc = smbchg_hw_init(chip);
 	if (rc < 0) {
