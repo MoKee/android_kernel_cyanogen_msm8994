@@ -22,6 +22,10 @@
 	qcom,board-id = <25 0x04>, <25 0x0C>, <25 0x14>;
 };
 
+&hall_sensor {
+	vddio-supply = <&pm8994_s4>;
+};
+
 &i2c_15 {
 	yas537@2e {
 		yas,position = <7>;
@@ -31,5 +35,11 @@
 &i2c_7 {
 	stk3x1x@48 {
 		vdd-supply = <&pm8994_s4>;
+	};
+};
+
+&spi_26 {
+	silead,silead_fp@0 {
+		vio-supply = <&pm8994_s4>;
 	};
 };

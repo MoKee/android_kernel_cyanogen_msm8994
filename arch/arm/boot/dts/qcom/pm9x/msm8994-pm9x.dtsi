@@ -895,7 +895,7 @@
 		cei,touch_id-gpio = <&msm_gpio 16 0>;
 	};
 
-	hall {
+	hall_sensor: hall {
 		compatible = "hall-switch";
 		pinctrl-names = "default";
 		pinctrl-0 = <&hall_sensor_int_default>;
