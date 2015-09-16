@@ -2167,6 +2167,11 @@ static void smbchg_parallel_usb_en_work(struct work_struct *work)
 	} else if (chip->parallel.current_max_ma != 0) {
 		pr_smb(PR_STATUS, "parallel charging unavailable\n");
 		smbchg_parallel_usb_disable(chip);
+	} else {
+		pr_smb(PR_STATUS, "parallel charging is not ready, periodically monitor per 10 seconds\n");
+		schedule_delayed_work(
+			&chip->parallel_en_work,
+			msecs_to_jiffies(PARALLEL_MONITOR_TIMER_MS));
 	}
 	mutex_unlock(&chip->parallel.lock);
 }
@@ -2187,6 +2192,11 @@ static void smbchg_parallel_usb_check_ok(struct smbchg_chip *chip)
 	} else if (chip->parallel.current_max_ma != 0) {
 		pr_smb(PR_STATUS, "parallel charging unavailable\n");
 		smbchg_parallel_usb_disable(chip);
+	} else {
+		pr_smb(PR_STATUS, "schedule parallel_en_work  \n");
+		schedule_delayed_work(
+			&chip->parallel_en_work,
+			msecs_to_jiffies(PARALLEL_CHARGER_EN_DELAY_MS));
 	}
 	mutex_unlock(&chip->parallel.lock);
 }
