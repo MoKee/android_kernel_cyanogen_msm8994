@@ -247,7 +247,7 @@ struct smbchg_chip {
 	bool				hot_recharging_en;
 	struct smbchg_wakeup_source	hot_recharging_wakeup_source;
 	struct delayed_work		warm_recharging_det_work;
-	bool				warm_recharging_en;
+	int				warm_recharging_en;
 	struct smbchg_wakeup_source	warm_recharging_wakeup_source;
 	struct delayed_work		parallel_batt_warm_en_work;
 	int parallel_batt_warm_work_tries;
@@ -312,6 +312,14 @@ enum wake_reason {
 	PM_PARALLEL_TAPER = BIT(3),
 	PM_BATT_WARM_PARALLEL_CHECK = BIT(4),
 };
+
+#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
+enum warm_recharging_state {
+	PM_WARM_RECHARGING_BOOT, // normal state while device boot up
+	PM_WARM_RECHARGING_INHIBIT, // battery temp rises to warm limitation condition
+	PM_WARM_RECHARGING_OK, //battery temp returns to warm recharging condition
+};
+#endif
 
 static int smbchg_debug_mask;
 module_param_named(
@@ -1664,7 +1672,8 @@ static bool smbchg_is_parallel_usb_ok(struct smbchg_chip *chip)
 		return false;
 	}
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
-	if (get_prop_batt_health(chip) == POWER_SUPPLY_HEALTH_GOOD && !chip->warm_recharging_en) {
+	if (get_prop_batt_health(chip) == POWER_SUPPLY_HEALTH_GOOD &&
+			chip->warm_recharging_en == PM_WARM_RECHARGING_INHIBIT) {
 		pr_smb(PR_STATUS, "Battery warm limitation is holdling, skipping\n");
 		return false;
 	}
@@ -1844,7 +1853,7 @@ static void taper_irq_en(struct smbchg_chip *chip, bool en)
 }
 
 #ifdef CONFIG_MACH_PM9X
-#define PARALLEL_CHARGER_FIRST_EN_DELAY_MS	30000
+#define PARALLEL_MONITOR_TIMER_MS	10000
 #endif
 static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 {
@@ -1862,11 +1871,8 @@ static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 	power_supply_set_present(parallel_psy, false);
 
 #ifdef CONFIG_MACH_PM9X
-	if (!chip->parallel_first_check) {
-		chip->parallel_first_check = 1;
-		schedule_delayed_work(&chip->parallel_en_work,
-			msecs_to_jiffies(PARALLEL_CHARGER_FIRST_EN_DELAY_MS));
-	}
+	pr_smb(PR_STATUS, "schedule parallel charging again\n");
+	schedule_delayed_work(&chip->parallel_en_work, msecs_to_jiffies(PARALLEL_MONITOR_TIMER_MS));
 #endif
 
 #ifndef CONFIG_BATTERY_JEITA_COMPLIANCE
@@ -1874,7 +1880,8 @@ static void smbchg_parallel_usb_disable(struct smbchg_chip *chip)
 	chip->target_fastchg_current_ma = chip->cfg_fastchg_current_ma;
 	smbchg_set_fastchg_current(chip, chip->target_fastchg_current_ma);
 #else
-	if (!chip->batt_warm && !chip->batt_cool && chip->warm_recharging_en)
+	if(!chip->batt_warm && !chip->batt_cool &&
+		chip->warm_recharging_en != PM_WARM_RECHARGING_INHIBIT)
 	{
 		//if health back to good and below 40 degree, restore defualt configuration
 		//if health crosses hot or cold, igonre these three check.
@@ -3934,17 +3941,6 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 		cancel_delayed_work(&chip->parallel_batt_warm_en_work);
 	}
 #endif
-#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
-	if (!chip->hot_recharging_en) {
-		pr_smb(PR_STATUS, "[JEITA] handle_usb_removal : cancel schedule hot_recharging_det_work\n");
-		cancel_delayed_work(&chip->hot_recharging_det_work);
-		smbchg_source_relax(&chip->hot_recharging_wakeup_source);
-	} else if (!chip->warm_recharging_en) {
-		pr_smb(PR_STATUS, "[JEITA] handle_usb_removal : cancel schedule warm_recharging_det_work\n");
-		cancel_delayed_work(&chip->warm_recharging_det_work);
-		smbchg_source_relax(&chip->warm_recharging_wakeup_source);
-	}
-#endif
 }
 
 static bool is_src_detect_high(struct smbchg_chip *chip)
@@ -4034,17 +4030,6 @@ static void handle_usb_insertion(struct smbchg_chip *chip)
 		rc = enable_irq_wake(chip->aicl_done_irq);
 		chip->enable_aicl_wake = true;
 	}
-#ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
-	if (!chip->hot_recharging_en) {
-		pr_smb(PR_STATUS, "[JEITA] handle_usb_insertion : schedule hot_recharging_det_work\n");
-		smbchg_source_stay_awake(&chip->hot_recharging_wakeup_source);
-		schedule_delayed_work(&chip->hot_recharging_det_work, msecs_to_jiffies(HOT_RECHARGING_WORK_MS));
-	} else if (!chip->warm_recharging_en) {
-		pr_smb(PR_STATUS, "[JEITA] handle_usb_insertion : schedule warm_recharging_det_work\n");
-		smbchg_source_stay_awake(&chip->warm_recharging_wakeup_source);
-		schedule_delayed_work(&chip->warm_recharging_det_work, msecs_to_jiffies(WARM_RECHARGING_WORK_MS));
-	}
-#endif
 }
 
 void update_usb_status(struct smbchg_chip *chip, bool usb_present, bool force)
@@ -4522,6 +4507,7 @@ static irqreturn_t batt_hot_handler(int irq, void *_chip)
 				power_supply_changed(&chip->batt_psy);
 		}
 	} else {
+		chip->hot_recharging_en = 0;
 		smbchg_source_relax(&chip->hot_recharging_wakeup_source);
 		//cancel work while battery crosses above hot threshold
 		cancel_delayed_work(&chip->hot_recharging_det_work);
@@ -4607,6 +4593,7 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
 	//normal to warm
 	if (chip->batt_warm) {
+		chip->warm_recharging_en = PM_WARM_RECHARGING_INHIBIT;
 		smbchg_float_voltage_set(chip, chip->warm_float_voltage_mv);
 		smbchg_set_fastchg_current(chip, chip->warm_fastchg_current_ma);
 		pr_smb(PR_STATUS,"[JEITA] normal to warm ! cv %d, cc %d\n",
@@ -4615,19 +4602,21 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 	} else {
 		get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
 		if(bat_temp_now > BATT_WARM_RECHARGIN_THRESHOLD) {
-			chip->warm_recharging_en = 0;
+			chip->warm_recharging_en = PM_WARM_RECHARGING_INHIBIT;
 			smbchg_source_stay_awake(&chip->warm_recharging_wakeup_source);
 			pr_smb(PR_STATUS,"[JEITA] start batt warm recharing schedule, temp %d\n", bat_temp_now);
 			schedule_delayed_work(&chip->warm_recharging_det_work, msecs_to_jiffies(WARM_RECHARGING_WORK_MS));
 		} else {
-			smbchg_float_voltage_set(chip, chip->cfg_vfloat_mv);
-			smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
-			chip->warm_recharging_en = 1;
-			schedule_delayed_work(&chip->parallel_batt_warm_en_work,
+			if(chip->warm_recharging_en != PM_WARM_RECHARGING_BOOT) {
+				smbchg_float_voltage_set(chip, chip->cfg_vfloat_mv);
+				smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
+				chip->warm_recharging_en = PM_WARM_RECHARGING_OK;
+				schedule_delayed_work(&chip->parallel_batt_warm_en_work, 
 				msecs_to_jiffies(PARALLEL_BATT_WARM_RECHARGING_WORK_MS));
-			if (chip->psy_registered)
-				power_supply_changed(&chip->batt_psy);
-			pr_smb(PR_STATUS,"[JEITA] batt warm recharing begin since temp suddently falls, temp  %d\n", bat_temp_now);
+				if (chip->psy_registered)
+					power_supply_changed(&chip->batt_psy);
+				pr_smb(PR_STATUS,"[JEITA] batt warm recharing begin since temp suddently falls, temp  %d\n", bat_temp_now);
+			}
 		}
 	}
 #endif
@@ -4654,7 +4643,7 @@ static void smbchg_warm_recharging_det_work(struct work_struct *work)
 			smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
 			cancel_delayed_work(&chip->warm_recharging_det_work);
 			smbchg_source_relax(&chip->warm_recharging_wakeup_source);
-			chip->warm_recharging_en = 1;
+			chip->warm_recharging_en = PM_WARM_RECHARGING_OK;
 			smbchg_stay_awake(chip, PM_BATT_WARM_PARALLEL_CHECK);
 			schedule_delayed_work(&chip->parallel_batt_warm_en_work, 
 				msecs_to_jiffies(PARALLEL_BATT_WARM_RECHARGING_WORK_MS));
@@ -6492,7 +6481,7 @@ static int smbchg_probe(struct spmi_device *spmi)
 	wakeup_source_init(&chip->warm_recharging_wakeup_source.source,
 			"qpnp_smbchg_warm_recharging");
 	chip->hot_recharging_en = 1;
-	chip->warm_recharging_en = 1;
+	chip->warm_recharging_en = PM_WARM_RECHARGING_BOOT;
 #endif
 	spin_lock_init(&chip->sec_access_lock);
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
