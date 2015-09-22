@@ -403,11 +403,18 @@ static int msm_qti_pp_get_pri_mi2s_lb_vol_mixer(struct snd_kcontrol *kcontrol,
 static int msm_qti_pp_set_pri_mi2s_lb_vol_mixer(struct snd_kcontrol *kcontrol,
 			    struct snd_ctl_elem_value *ucontrol)
 {
+#ifdef CONFIG_MACH_PM9X
+	int value = ucontrol->value.integer.value[0] * 20 / 43;
+
+	afe_loopback_gain(AFE_PORT_ID_PRIMARY_MI2S_TX, value);
+
+	msm_afe_lb_vol_ctrl = value;
+#else
 	afe_loopback_gain(AFE_PORT_ID_PRIMARY_MI2S_TX,
 			  ucontrol->value.integer.value[0]);
 
 	msm_afe_lb_vol_ctrl = ucontrol->value.integer.value[0];
-
+#endif
 	return 0;
 }
 
