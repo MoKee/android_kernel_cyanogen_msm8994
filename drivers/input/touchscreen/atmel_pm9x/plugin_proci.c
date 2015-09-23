@@ -1620,11 +1620,11 @@ static struct reg_config mxt_dwakeup_cfg[] = {
 	},
 #endif
 
-	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
-		.offset = 2,.buf = {2}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
+//		.offset = 2,.buf = {2}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
 
-	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
-		.offset = 4,.buf = {10}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
+//		.offset = 4,.buf = {10}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
 
 	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
 		.offset = 11,.buf = {2}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
@@ -1632,14 +1632,14 @@ static struct reg_config mxt_dwakeup_cfg[] = {
 	{.reg = MXT_GEN_ACQUISITIONCONFIG_T8, .instance = 0, 
 		.offset = 14,.buf = {0x1}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
 
-	{.reg = MXT_SPT_GPIOPWM_T19, .instance = 0, 
-		.offset = 0,.buf = {1,0,0,15}, .len = 4, .mask = 0,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_SPT_GPIOPWM_T19, .instance = 0, 
+//		.offset = 0,.buf = {1,0,0,15}, .len = 4, .mask = 0,.flag = BIT_MASK(P_COMMON)},
 
 	{.reg = MXT_SPT_CTECONFIG_T46,
 		.offset = 2,.buf = {8}, .len = 1, .mask = 0,.flag = BIT_MASK(P_COMMON)},
 
-	{.reg = MXT_PROCI_STYLUS_T47,
-		.offset = 0,.buf = {0}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_PROCI_STYLUS_T47,
+//		.offset = 0,.buf = {0}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
 
 	{.reg = MXT_PROCI_LENSBENDING_T65,
 		.offset = 0,.buf = {0}, .len = 0, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
@@ -1693,14 +1693,14 @@ static struct reg_config mxt_dwakeup_cfg[] = {
 			.offset = 0,.buf = {0}, .len = 0, .mask = 0x1, .flag = BIT_MASK(OP_SET),  .sleep = 100},
 #endif
 
-	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 3,
-		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
-	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 4,
-		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
-	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 5,
-		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
-	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 6,
-		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 3,
+//		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 4,
+//		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 5,
+//		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
+//	{.reg = MXT_SPT_DYNAMICCONFIGURATIONCONTROLLER_T70, .instance = 6,
+//		.offset = 0,.buf = {1}, .len = 1, .mask = 0x1,.flag = BIT_MASK(P_COMMON)},
 
 	//dummy
 	{MXT_SPT_USERDATA_T38,0,
