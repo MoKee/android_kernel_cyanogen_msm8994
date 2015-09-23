@@ -1,48 +1,48 @@
 /*PM99 battery profile tuned from QCT
-comments : #2129242_Compal_PM99_ModelA_3040mAh_Master_Sept10th2015
-CEI implemented this battery profile on sept 14, 2015*/
+comments : #2129239_Compal_PM99_ModelB_3000mAh_averaged_MasterSlave_Sept17th2015
+CEI implemented this battery profile on sept 23, 2015*/
 
 qcom,apak-3000mah-100k {
 	qcom,max-voltage-uv = <4400000>;
-	qcom,nom-batt-capacity-mah = <3040>;
+	qcom,nom-batt-capacity-mah = <3000>;
 	qcom,batt-id-kohm = <100>;
 	qcom,battery-beta = <3435>;
 	qcom,battery-type = "apak-3000mah-100k";
-	qcom,chg-rslow-comp-c1 = <3475480>;
-	qcom,chg-rslow-comp-c2 = <5579670>;
-	qcom,chg-rs-to-rslow = <731987>;
-	qcom,chg-rslow-comp-thr = <0xAF>;
-	qcom,checksum = <0x3009>;
+	qcom,chg-rslow-comp-c1 = <3304341>;
+	qcom,chg-rslow-comp-c2 = <4991268>;
+	qcom,chg-rs-to-rslow = <708421>;
+	qcom,chg-rslow-comp-thr = <0xAB>;
+	qcom,checksum = <0xBF2C>;
 	qcom,gui-version = "PMI8994GUI - 2.1.6.8";
 	qcom,fg-profile-data = [
-		 F1 83 75 7D 
-		 A1 81 25 7C 
-		 60 83 56 6D 
-		 D5 83 FE 8D 
-		 2C 82 61 99 
-		 13 BC 2B C8 
-		 5B 0F 05 88 
-		 EC 7D E6 81 
-		 5E 7C 55 83 
-		 30 69 2B 7A 
-		 2F 87 44 82 
-		 E4 99 36 BD 
-		 4B CA 59 0D 
-		 34 0C 8A 5B 
+		 E5 83 FF 7C 
+		 43 81 97 77 
+		 5C 83 07 6D 
+		 5F 88 67 8F 
+		 49 82 6D 98 
+		 0E B6 8C C1 
+		 52 17 FD 83 
+		 62 7D 68 81 
+		 AF 77 4D 83 
+		 24 71 D8 4A 
+		 18 7E 59 82 
+		 4D 99 7E BC 
+		 25 C9 58 0E 
+		 06 0C 3F 60 
 		 14 70 77 FE 
-		 B4 3E 20 44 
-		 36 3B 00 00 
-		 0A 4D 85 33 
-		 27 40 00 00 
+		 0D 3C 77 44 
+		 5F 40 00 00 
+		 44 4C 29 3B 
+		 DE 2B 00 00 
 		 00 00 00 00 
 		 00 00 00 00 
-		 33 6A 33 69 
-		 D9 71 8B 8B 
-		 B7 76 D2 6B 
-		 FF 59 D4 82 
-		 15 75 4C 69 
-		 E3 7E 34 A9 
-		 1D 87 62 CD 
+		 E3 69 02 69 
+		 75 72 1F 8B 
+		 85 76 B1 6A 
+		 35 69 7F 82 
+		 48 75 7D 68 
+		 D8 7E 36 AB 
+		 1A A4 61 3B 
 		 64 A0 71 0C 
 		 28 00 FF 36 
 		 F0 11 30 03 
