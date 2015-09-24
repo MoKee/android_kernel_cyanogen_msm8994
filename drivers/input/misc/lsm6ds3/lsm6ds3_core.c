@@ -567,20 +567,13 @@ static void poll_function_work(struct work_struct *input_work)
 	int xyz[3] = { 0 };
 	u8 data[6];
 	int err;
+	u64 overrun;
+	s64 timestamp;
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	int offset[LSM6DS3_DATA_BUF_NUM]= {0};
 	/* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
-	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
-	s64 time_before, time_after, delay;
-	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
-
 	sdata = container_of((struct work_struct *)input_work,
 			struct lsm6ds3_sensor_data, input_work);
-
-	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
-	time_before = lsm6ds3_get_time_ns();
-	delay = MS_TO_NS( (s64)sdata->poll_interval );
-	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
 
 	/* [PM99] S- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 	switch (sdata->sindex) {
@@ -642,7 +635,8 @@ static void poll_function_work(struct work_struct *input_work)
 		break;
 	}
 	/* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
-
+	/* take the event timestamp before reading from the sensor */
+	timestamp = lsm6ds3_get_time_ns();
 	err = lsm6ds3_get_poll_data(sdata, data);
 	if (err < 0)
 		dev_err(sdata->cdata->dev, "get %s data failed %d\n",
@@ -668,18 +662,15 @@ static void poll_function_work(struct work_struct *input_work)
 		xyz[0] *= sdata->c_gain;
 		xyz[1] *= sdata->c_gain;
 		xyz[2] *= sdata->c_gain;
-		lsm6ds3_report_3axes_event(sdata, xyz, lsm6ds3_get_time_ns());
+		lsm6ds3_report_3axes_event(sdata, xyz, timestamp);
 	}
 
-	/* [PM99] S- BUG#450 Grace_Chang improve G+Gyro poll function performance */
-	time_after = lsm6ds3_get_time_ns();
-	delay = delay - (time_after - time_before);
-	if (delay <= 0)
-		delay = 1;
-	sdata->ktime = ktime_set(0, delay);
-	/* [PM99] E- BUG#450 Grace_Chang improve G+Gyro poll function performance */
-
-	hrtimer_start(&sdata->hr_timer, sdata->ktime, HRTIMER_MODE_REL);
+	/* move the timer forward one or more periods forward */
+	overrun = hrtimer_forward_now(&sdata->hr_timer, sdata->ktime);
+	if (overrun != 1)
+		dev_warn_ratelimited(sdata->cdata->dev,
+			"timer overrun = %llu (sample drop)\n", overrun);
+	hrtimer_restart(&sdata->hr_timer);
 }
 #endif
 
