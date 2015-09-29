@@ -1165,7 +1165,7 @@
 	qcom,fg-iterm-ma = <250>;
 	qcom,warm-bat-decidegc = <450>;
 	qcom,cool-bat-decidegc = <200>;
-	qcom,hot-bat-decidegc = <570>;
+	qcom,hot-bat-decidegc = <590>;
 	qcom,cold-bat-decidegc = <0>;
 	qcom,thermal-coefficients = [C5 86 BE 50 D1 37];
 };
