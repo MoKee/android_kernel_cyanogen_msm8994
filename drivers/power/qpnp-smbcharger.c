@@ -4525,7 +4525,6 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 	//warm to normal
 	} else {
 		 smbchg_float_voltage_set(chip, chip->cfg_vfloat_mv);
-		 smbchg_set_fastchg_current(chip, chip->cfg_fastchg_current_ma);
 		 pr_smb(PR_STATUS,"[JEITA] warm to normal ! restore to default value cv %d, cc %d,  temp %d\n",
 			chip->cfg_vfloat_mv, chip->cfg_fastchg_current_ma, bat_temp_now);
 	}
