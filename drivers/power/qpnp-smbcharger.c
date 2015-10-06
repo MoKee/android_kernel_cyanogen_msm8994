@@ -4514,6 +4514,8 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 	smbchg_read(chip, &reg, chip->bat_if_base + RT_STS, 1);
 	chip->batt_warm = !!(reg & HOT_BAT_SOFT_BIT);
 	pr_smb(PR_INTERRUPT, "triggered: 0x%02x\n", reg);
+	smbchg_parallel_usb_check_ok(chip);
+	
 #ifdef CONFIG_BATTERY_JEITA_COMPLIANCE
 	get_property_from_fg(chip, POWER_SUPPLY_PROP_TEMP, &bat_temp_now);
 	//normal to warm
@@ -4529,7 +4531,7 @@ static irqreturn_t batt_warm_handler(int irq, void *_chip)
 			chip->cfg_vfloat_mv, chip->cfg_fastchg_current_ma, bat_temp_now);
 	}
 #endif
-	smbchg_parallel_usb_check_ok(chip);
+
 	if (chip->psy_registered)
 		power_supply_changed(&chip->batt_psy);
 	set_property_on_fg(chip, POWER_SUPPLY_PROP_HEALTH,
