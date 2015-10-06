@@ -62,6 +62,11 @@
 #define YAS_MSM_NAME		"yas539_mag"
 #endif
 
+/* input types for timestamps  */
+#define INPUT_EVENT_TIME_TYPE		EV_MSC
+#define INPUT_EVENT_TIME_MSB		MSC_SCAN
+#define INPUT_EVENT_TIME_LSB		MSC_MAX
+
 static struct i2c_client *this_client;
 
 struct yas_state {
@@ -667,10 +672,14 @@ static void yas_work_func(struct work_struct *work)
 	struct yas_data mag[1];
 	int32_t delay;
 	uint32_t time_before, time_after;
+	struct timespec ts;
+	int64_t timestamp;
 	int ret, i;
 
 	time_before = yas_current_time();
 	mutex_lock(&st->lock);
+	get_monotonic_boottime(&ts);
+	timestamp = timespec_to_ns(&ts);
 	ret = st->mag.measure(mag, 1);
 	if (ret == 1) {
 		for (i = 0; i < 3; i++)
@@ -683,6 +692,10 @@ static void yas_work_func(struct work_struct *work)
 		input_report_abs(st->input_dev, ABS_X, mag[0].xyz.v[0]);
 		input_report_abs(st->input_dev, ABS_Y, mag[0].xyz.v[1]);
 		input_report_abs(st->input_dev, ABS_Z, mag[0].xyz.v[2]);
+		input_event(st->input_dev, INPUT_EVENT_TIME_TYPE, INPUT_EVENT_TIME_MSB,
+						timestamp >> 32);
+		input_event(st->input_dev, INPUT_EVENT_TIME_TYPE, INPUT_EVENT_TIME_LSB,
+						timestamp & 0xffffffff);
 		input_sync(st->input_dev);
 	}
 	time_after = yas_current_time();
@@ -750,6 +763,10 @@ static int yas_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	input_set_abs_params(input_dev, ABS_X, INT_MIN, INT_MAX, 0, 0);
 	input_set_abs_params(input_dev, ABS_Y, INT_MIN, INT_MAX, 0, 0);
 	input_set_abs_params(input_dev, ABS_Z, INT_MIN, INT_MAX, 0, 0);
+	/* configure input device for timestamps */
+	__set_bit(INPUT_EVENT_TIME_TYPE, input_dev->evbit);
+	__set_bit(INPUT_EVENT_TIME_MSB, input_dev->mscbit);
+	__set_bit(INPUT_EVENT_TIME_LSB, input_dev->mscbit);
 
 	input_set_drvdata(input_dev, st);
 	atomic_set(&st->enable, 0);
