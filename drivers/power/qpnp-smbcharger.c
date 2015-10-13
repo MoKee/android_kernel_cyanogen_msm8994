@@ -3096,7 +3096,11 @@ static void smbchg_aicl_deglitch_wa_check(struct smbchg_chip *chip)
 		}
 		chip->vbat_above_headroom = !prop.intval;
 	}
+#ifdef CONFIG_MACH_PM9X
+	smbchg_aicl_deglitch_wa_en(chip, true);
+#else
 	smbchg_aicl_deglitch_wa_en(chip, chip->vbat_above_headroom);
+#endif
 }
 
 #define UNKNOWN_BATT_TYPE	"Unknown Battery"
