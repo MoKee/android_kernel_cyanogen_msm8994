@@ -98,6 +98,11 @@
 */
 //jonny E
 
+/* input types for timestamps  */
+#define INPUT_EVENT_TIME_TYPE		EV_MSC
+#define INPUT_EVENT_TIME_MSB		MSC_SCAN
+#define INPUT_EVENT_TIME_LSB		MSC_MAX
+
 struct hsppad_data {
 	struct input_dev	*input;
 	struct i2c_client	*i2c;
@@ -732,9 +737,18 @@ static void hsppad_polling(struct work_struct *work)
 
 	mutex_lock(&hsppad->lock);
 	if (hsppad->factive) {
+		struct timespec ts;
+		int64_t timestamp;
+		get_monotonic_boottime(&ts);
+		timestamp = timespec_to_ns(&ts);
+
 		if (hsppad_get_pressure_data(hsppad, pt) == 0) {
 			input_report_abs(hsppad->input, ABS_PRESSURE, pt[0]); /* ALPS Modified 20150401 change function */
 			input_report_abs(hsppad->input, ABS_GAS, pt[1]);      /* ALPS Modified 20150401 change function */
+			input_event(hsppad->input, INPUT_EVENT_TIME_TYPE, INPUT_EVENT_TIME_MSB,
+							timestamp >> 32);
+			input_event(hsppad->input, INPUT_EVENT_TIME_TYPE, INPUT_EVENT_TIME_LSB,
+							timestamp & 0xffffffff);
 			input_sync(hsppad->input);
 		}
 		hsppad_force_setup(hsppad);
@@ -815,6 +829,11 @@ static int hsppad_probe(struct i2c_client *client,
 	hsppad->input->evbit[0]		= BIT_MASK(EV_ABS);             /* ALPS Modified 20150401 EV_REL->EV_ABS */
 	input_set_abs_params(hsppad->input, ABS_PRESSURE, 250, 1110, 0 ,0); /* ALPS Modified 20150401 change function */
 	input_set_abs_params(hsppad->input, ABS_GAS, -40, 85, 0 ,0);        /* ALPS Modified 20150401 change function */
+
+	/* configure input device for timestamps */
+	__set_bit(INPUT_EVENT_TIME_TYPE, hsppad->input->evbit);
+	__set_bit(INPUT_EVENT_TIME_MSB, hsppad->input->mscbit);
+	__set_bit(INPUT_EVENT_TIME_LSB, hsppad->input->mscbit);
 
 	rc = input_register_device(hsppad->input);
 	if (rc) {
