@@ -28,12 +28,6 @@
 *  1. Avoid 10ms sampling rate I2C transfer fail
  */
 
-#define ALPS_PRS_DEBUG 0
-
-#ifdef ALPS_PRS_DEBUG
-#define DEBUG 1
-#endif
-
 #include <linux/delay.h>
 #include <linux/fs.h>
 #include <linux/i2c.h>
@@ -406,10 +400,10 @@ static int hsppad_get_pressure_data(
 		return err;
 	/* [PM99] S- BUG#564 Jonny_Chan avoid I2C fail */
 	if ((sx[0] & 0xFE) != 0x40) {
-		dev_dbg(&hsppad->i2c->adapter->dev,
+		dev_err(&hsppad->i2c->adapter->dev,
 		HSPPAD_LOG_TAG "status bit error=0x%02X\n", sx[0]);
 
-		dev_dbg(&hsppad->i2c->adapter->dev,
+		dev_err(&hsppad->i2c->adapter->dev,
 			HSPPAD_LOG_TAG "[ERROR ]prs:%d,tmp:%d\n", pt[0], pt[1]);
 		
 		if(hsppad->flag_previous) {
