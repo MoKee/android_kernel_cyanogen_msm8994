@@ -1339,7 +1339,7 @@ static ssize_t stk_als_lux_store(struct device *dev, struct device_attribute *at
     ps_data->als_lux_last = value;
 	input_report_abs(ps_data->als_input_dev, ABS_MISC, value);
 	input_sync(ps_data->als_input_dev);
-	printk(KERN_INFO "%s: als input event %ld lux\n",__func__, value);	
+	pr_debug("%s: als input event %ld lux\n",__func__, value);
 
     return size;
 }
@@ -1577,7 +1577,7 @@ static ssize_t stk_ps_distance_show(struct device *dev, struct device_attribute 
 	input_report_abs(ps_data->ps_input_dev, ABS_DISTANCE, dist);
 	input_sync(ps_data->ps_input_dev);
 	wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);
-	printk(KERN_INFO "%s: ps input event %d cm\n",__func__, dist);		
+	pr_debug("%s: ps input event %d cm\n",__func__, dist);
     return scnprintf(buf, PAGE_SIZE, "%d\n", dist);
 }
 
@@ -1597,7 +1597,7 @@ static ssize_t stk_ps_distance_store(struct device *dev, struct device_attribute
 	input_report_abs(ps_data->ps_input_dev, ABS_DISTANCE, value);
 	input_sync(ps_data->ps_input_dev);
 	wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);	
-	printk(KERN_INFO "%s: ps input event %ld cm\n",__func__, value);	
+	pr_debug("%s: ps input event %ld cm\n",__func__, value);
     return size;
 }
 
@@ -2649,7 +2649,7 @@ static int stk_ps_tune_zero_func_fae(struct stk3x1x_data *ps_data)
 		}
 		word_data = (value[0]<<8) | value[1];						
 		//printk(KERN_INFO "%s: word_data=%d\n", __func__, word_data);
-		printk(KERN_INFO "[stk]word_data=%d\n", word_data);
+		pr_debug("[stk]word_data=%d\n", word_data);
 		
 		if(word_data == 0)
 		{
@@ -2808,7 +2808,7 @@ static void stk_als_poll_work_func(struct work_struct *work)
 	{
 		ps_data->als_lux_last = reading_lux;
 		stk_send_input_report(ps_data->als_input_dev, &ts, ABS_MISC, reading_lux);
-		printk(KERN_INFO "%s: als input event %d lux\n",__func__, reading_lux);		
+		pr_debug("%s: als input event %d lux\n",__func__, reading_lux);
 	}
 	return;
 }
@@ -2960,9 +2960,9 @@ static void stk_work_func(struct work_struct *work)
 
 		ps_data->als_lux_last = stk_alscode2lux(ps_data, reading);
 		stk_send_input_report(ps_data->als_input_dev, &ts, ABS_MISC, ps_data->als_lux_last);
-#ifdef STK_DEBUG_PRINTF		
-		printk(KERN_INFO "%s: als input event %d lux\n",__func__, ps_data->als_lux_last);			
-#endif		
+
+		pr_debug("%s: als input event %d lux\n",__func__, ps_data->als_lux_last);
+
     }
     if (org_flag_reg & STK_FLG_PSINT_MASK)
     {
@@ -2976,7 +2976,7 @@ static void stk_work_func(struct work_struct *work)
 
 		//add for FTM interrupt check 20130424 start
 		CCI_FTM_INTERRUPT++;
-		printk(KERN_ERR "%s: CCI_FTM_INTERRUPT = %d\n", __func__, CCI_FTM_INTERRUPT);
+		pr_debug("%s: CCI_FTM_INTERRUPT = %d\n", __func__, CCI_FTM_INTERRUPT);
 		//add for FTM interrupt check 20130424 end
 		// CCI read H_thd/L_thd when PS interrupt trigger start
 		for(cnt=6;cnt<=9;cnt++){
@@ -2989,11 +2989,9 @@ static void stk_work_func(struct work_struct *work)
 				//}
 			i++;
 			}
-		printk(KERN_ERR "%s: stk_work_func() read H/L THD from register when interrupt trigger => H_THD = %2X, %2X, L_THD = %2X, %2X\n", __func__, ps_reg[0], ps_reg[1], ps_reg[2], ps_reg[3]);
+		pr_debug("%s: stk_work_func() read H/L THD from register when interrupt trigger => H_THD = %2X, %2X, L_THD = %2X, %2X\n", __func__, ps_reg[0], ps_reg[1], ps_reg[2], ps_reg[3]);
 		// CCI read H_thd/L_thd when PS interrupt trigger end
-#ifdef STK_DEBUG_PRINTF		
-		printk(KERN_INFO "%s: ps input event=%d, ps code = %d\n",__func__, near_far_state, reading);
-#endif			
+		pr_debug("%s: ps input event=%d, ps code = %d\n",__func__, near_far_state, reading);
 	}
 	
     ret = stk3x1x_set_flag(ps_data, org_flag_reg, disable_flag);		
