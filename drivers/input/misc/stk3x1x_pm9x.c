@@ -197,8 +197,9 @@
 #define STK3210_STK3310_PID	0x13
 #define STK3211_STK3311_PID	0x1D
 
+static struct stk3x1x_platform_data *plat_data_global;
 #define LightSensorK
-
+static uint16_t Keep_state=0;
 #ifdef STK_TUNE0
 	#define STK_MAX_MIN_DIFF	500
 	#define STK_LT_N_CT     600
@@ -595,63 +596,198 @@ inline void stk_als_set_new_thd(struct stk3x1x_data *ps_data, uint16_t alscode)
 }
 #endif // CONFIG_STK_PS_ALS_USE_CHANGE_THRESHOLD
 
+static int stk3x1x_write_init_registers(struct stk3x1x_data *ps_data,
+		struct stk3x1x_platform_data *plat_data)
+{
+	int ret;
+
+	/* write STATE Register (00h) */
+	Keep_state |=plat_data->state_reg;
+   	 ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,
+    		STK_STATE_REG,
+			Keep_state);
+   	 if (ret < 0) {
+     	   printk(KERN_ERR "%s: write i2c error\n", __func__);
+     	   return ret;
+	}
+
+    /* write PSCTRL Register (01h) */
+	ps_data->psctrl_reg = plat_data->psctrl_reg;
+#ifdef STK_POLL_PS		
+	ps_data->psctrl_reg &= 0x3F;
+#endif	
+    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,
+    		STK_PSCTRL_REG,
+			ps_data->psctrl_reg);
+    if (ret < 0) {
+        printk(KERN_ERR "%s: write i2c error\n", __func__);
+        return ret;
+    }
+
+    /* write ALSCTRL Register (02h) */
+	ps_data->alsctrl_reg = plat_data->alsctrl_reg;
+    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,
+    		STK_ALSCTRL_REG,
+			ps_data->alsctrl_reg);
+    if (ret < 0) {
+        printk(KERN_ERR "%s: write i2c error\n", __func__);
+        return ret;
+    }
+
+    /* write LEDCTRL Register (03h) */
+    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,
+    		STK_LEDCTRL_REG,
+			plat_data->ledctrl_reg);
+    if (ret < 0) {
+        printk(KERN_ERR "%s: write i2c error\n", __func__);
+        return ret;
+    }
+
+    /* write WAIT Register (05h) */
+	ps_data->wait_reg = plat_data->wait_reg;
+
+	if (ps_data->wait_reg < 2) {
+		printk(KERN_WARNING
+				"%s: wait_reg should be larger than 2, force to write 2\n", __func__);
+		ps_data->wait_reg = 2;
+	} else if (ps_data->wait_reg > 0xFF) {
+		printk(KERN_WARNING
+				"%s: wait_reg should be less than 0xFF, force to write 0xFF\n", __func__);
+		ps_data->wait_reg = 0xFF;		
+	}
+
+    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client,
+    		STK_WAIT_REG,
+			ps_data->wait_reg);
+    if (ret < 0) {
+        printk(KERN_ERR "%s: write i2c error\n", __func__);
+        return ret;
+    }
+
+    return 0;
+}
+
+static int stk3x1x_check_init_registers(struct stk3x1x_data *ps_data,
+		struct stk3x1x_platform_data *plat_data)
+{
+	int ret;
+	unsigned char expect;
+	char result[10];
+
+	/* check STATE Register (00h) */
+	expect = plat_data->state_reg;
+
+	ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_STATE_REG);
+	if (ret < 0) {
+		printk(KERN_ERR "%s: read i2c error\n", __func__);
+		return ret;
+	} else if ((unsigned char)ret != expect) {
+		sprintf(result, "FAIL");
+		ret = -EAGAIN;
+	} else {
+		sprintf(result, "PASS");
+	}
+	printk("%s: STATE Register (00h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+			__func__, result, (unsigned char)ret, expect);
+
+	/* check PSCTRL Register (01h) */
+	expect = ps_data->psctrl_reg;
+
+	ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_PSCTRL_REG);
+	if (ret < 0) {
+		printk(KERN_ERR "%s: read i2c error\n", __func__);
+		return ret;
+	} else if ((unsigned char)ret != expect) {
+		sprintf(result, "FAIL");
+		ret = -EAGAIN;
+		return ret;
+	} else {
+		sprintf(result, "PASS");
+	}
+	printk("%s: PSCTRL Register (01h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+			__func__, result, (unsigned char)ret, expect);
+
+	/* check ALSCTRL Register (02h) */
+	expect = ps_data->alsctrl_reg;
+
+	ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_ALSCTRL_REG);
+	if (ret < 0) {
+		printk(KERN_ERR "%s: read i2c error\n", __func__);
+		return ret;
+	} else if ((unsigned char)ret != expect) {
+		sprintf(result, "FAIL");
+		ret = -EAGAIN;
+		return ret;
+	} else {
+		sprintf(result, "PASS");
+	}
+	printk("%s: ALSCTRL Register (02h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+			__func__, result, (unsigned char)ret, expect);
+
+	/* check LEDCTRL Register (03h) */
+	expect = plat_data->ledctrl_reg;
+
+	ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_LEDCTRL_REG);
+	if (ret < 0) {
+		printk(KERN_ERR "%s: read i2c error\n", __func__);
+		return ret;
+	} else if ((unsigned char)ret != expect) {
+		sprintf(result, "FAIL");
+		ret = -EAGAIN;
+		return ret;
+	} else {
+		sprintf(result, "PASS");
+	}
+	printk("%s: LEDCTRL Register (03h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+			__func__, result, (unsigned char)ret, expect);
+
+	/* check WAIT Register (05h) */
+	expect = ps_data->wait_reg;
+
+	ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_WAIT_REG);
+	if (ret < 0) {
+		printk(KERN_ERR "%s: read i2c error\n", __func__);
+		return ret;
+	} else if ((unsigned char)ret != expect) {
+		sprintf(result, "FAIL");
+		ret = -EAGAIN;
+		return ret;
+	} else {
+		sprintf(result, "PASS");
+	}
+	printk("%s: WAIT Register (05h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+			__func__, result, (unsigned char)ret, expect);
+
+	return ret;
+}
+
+#define INIT_REG_RETRY	3	/* initial register retry times */
 
 static int32_t stk3x1x_init_all_reg(struct stk3x1x_data *ps_data, struct stk3x1x_platform_data *plat_data)
 {
 	int32_t ret;
 	uint8_t w_reg;
-	
-	w_reg = plat_data->state_reg;
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, w_reg);
-    if (ret < 0)
-    {
-        printk(KERN_ERR "%s: write i2c error\n", __func__);
-        return ret;
-    }		
+	int i;
+	int retry = INIT_REG_RETRY;
 
-	ps_data->psctrl_reg = plat_data->psctrl_reg;
-#ifdef STK_POLL_PS		
-	ps_data->psctrl_reg &= 0x3F;
-#endif	
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_PSCTRL_REG, ps_data->psctrl_reg);
-    if (ret < 0)
-    {
-        printk(KERN_ERR "%s: write i2c error\n", __func__);
-        return ret;
-    }	
-	ps_data->alsctrl_reg = plat_data->alsctrl_reg;
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_ALSCTRL_REG, ps_data->alsctrl_reg);
-    if (ret < 0)
-    {
-        printk(KERN_ERR "%s: write i2c error\n", __func__);
-        return ret;
-    }		
-	w_reg = plat_data->ledctrl_reg;
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_LEDCTRL_REG, w_reg);
-    if (ret < 0)
-    {
-        printk(KERN_ERR "%s: write i2c error\n", __func__);
-        return ret;
-    }	
-	ps_data->wait_reg = plat_data->wait_reg;
-	
-	if(ps_data->wait_reg < 2)
-	{
-		printk(KERN_WARNING "%s: wait_reg should be larger than 2, force to write 2\n", __func__);
-		ps_data->wait_reg = 2;
+	for (i = 0; i <= retry; i++) {
+		/* write all initial register */
+		ret = stk3x1x_write_init_registers(ps_data, plat_data);
+		if (ret < 0) {
+			printk(KERN_ERR "%s: Write initial registers failed\n", __func__);
+			return ret;
+		}
+
+		/* check all initial register */
+		ret = stk3x1x_check_init_registers(ps_data, plat_data);
+		if (ret == -EAGAIN) {
+			/* initial registers incorrect */
+			printk(KERN_WARNING "%s: [WARNING] Initial registers are incorrect (retry %d)\n", __func__, i);
+		} else {
+			break;
+		}
 	}
-	else if (ps_data->wait_reg > 0xFF)
-	{
-		printk(KERN_WARNING "%s: wait_reg should be less than 0xFF, force to write 0xFF\n", __func__);
-		ps_data->wait_reg = 0xFF;		
-	}
-	w_reg = plat_data->wait_reg;
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_WAIT_REG, w_reg);
-    if (ret < 0)
-    {
-        printk(KERN_ERR "%s: write i2c error\n", __func__);
-        return ret;
-    }	
+
 #ifdef STK_TUNE0	
 	ps_data->psa = 0x0;
 	ps_data->psi = 0xFFFF;	
@@ -811,7 +947,7 @@ static int32_t stk3x1x_get_flag(struct stk3x1x_data *ps_data)
 static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 {
     int32_t ret;
-	uint8_t w_state_reg;
+//	uint8_t w_state_reg;
 	uint8_t curr_ps_enable;	
 	uint32_t reading;
 	int32_t near_far_state;		
@@ -819,6 +955,8 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 	int32_t ps_reg[4];
 	uint8_t cnt;
 	uint8_t i = 0;
+	char result[10];
+	int int_ret=0;
 	// CCI read H_thd/L_thd when PS enable/disable end
 	//STK add for CCI start 20130430 dust issue for variation in 2 consequential calls start
 	unsigned int hang_up_hthd, hang_up_lthd;
@@ -837,14 +975,14 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 		cancel_work_sync(&ps_data->stk_ps_tune0_work);
 	}
 #endif		
-	
-    ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_STATE_REG);
+	/*Nina modify for reset issue*/
+ /*   ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_STATE_REG);
     if (ret < 0)
     {
 		printk(KERN_ERR "%s: read i2c error, ret=%d\n", __func__, ret);		
 		return ret;
     }	
-	w_state_reg = ret;
+	w_state_reg = ret;*/
 #ifdef STK_TUNE0
 	if(ps_data->first_boot == true)
 	{		
@@ -875,22 +1013,21 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 			w_state_reg |= STK_STATE_EN_WAIT_MASK;
 	*/
 	/*Nina modify 2015/3/23 start*/
-	w_state_reg &= ~(STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK | STK_STATE_EN_AK_MASK); 
+	Keep_state &= ~(STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK | STK_STATE_EN_AK_MASK); 
 	if(enable)	
 	{
-		w_state_reg |= STK_STATE_EN_PS_MASK;	
+		Keep_state |= STK_STATE_EN_PS_MASK;	
 		if(!(ps_data->als_enabled))
-			w_state_reg |= STK_STATE_EN_WAIT_MASK;
+			Keep_state |= STK_STATE_EN_WAIT_MASK;
 	}
 	else
 	{
 		if(ps_data->als_enabled)
-			w_state_reg |= STK_STATE_EN_WAIT_MASK;
+			Keep_state |= STK_STATE_EN_WAIT_MASK;
 	}
 	/*Nina modify 2015/3/23 end*/
 	
-	
-	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, w_state_reg);
+	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, Keep_state);
     if (ret < 0)
 	{
 		printk(KERN_ERR "%s: write i2c error, ret=%d\n", __func__, ret);		
@@ -910,9 +1047,52 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 		}
 	printk(KERN_ERR "%s: stk3x1x_enable_ps() read H/L THD from register before auto cal => H_THD = %2X, %2X, L_THD = %2X, %2X\n", __func__, ps_reg[0], ps_reg[1], ps_reg[2], ps_reg[3]);
 	// CCI read H_thd/L_thd when PS enable/disable end
+	if((ps_reg[2]==0&& ps_reg[3]==0)||(ps_reg[2]==0&& ps_reg[3]==100)){
+			stk3x1x_set_ps_thd_h(ps_data, 6000);
+			stk3x1x_set_ps_thd_l(ps_data, 5000);	
+			printk(KERN_ERR "%s: H/L threshold be reset to H=6000, L=5000 \n", __func__);
+		}
+		
 
     if(enable)
 	{
+		for (i = 0; i <= 3; i++) {
+		/*--------------------check register start--------------------------------------*/
+			int_ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_INT_REG);
+			if (int_ret < 0) {
+				printk(KERN_ERR "%s: read i2c error\n", __func__);
+			} else if ((unsigned char)int_ret != 1) {
+				sprintf(result, "FAIL");
+			} else {
+				sprintf(result, "PASS");
+			}
+			printk("%s: INT Register (04h) init %s (read = 0x%02X / expect = 0x%02X)\n",
+					__func__, result, (unsigned char)int_ret, 1);
+	
+			ret = stk3x1x_check_init_registers(ps_data, plat_data_global);
+			/*--------------------check register end--------------------------------------*/
+
+			/*--------------------check register has problem start--------------------------------------*/
+			if (ret == -EAGAIN || int_ret <0 ) {
+				/* initial registers incorrect */
+				printk(KERN_ERR "%s: Registers Incorrect & rewrite\n", __func__);
+
+				/*rewrite P/L sensor config*/
+				int_ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_INT_REG, 1);
+				ret = stk3x1x_write_init_registers(ps_data, plat_data_global);
+				if(ret<0||int_ret<0){
+						printk(KERN_ERR "%s: Rewrite registers failed %d times \n", __func__,i);
+				} 
+				else {
+					break;
+				}
+			}
+			/*--------------------check register has problem end --------------------------------------*/
+			else{
+				break;
+				}
+		}
+
 	// CCI add First boot H/L thd for debug start
 	printk(KERN_ERR "%s: [CCI]stk3x1x_enable_ps() show first boot H/L THD => FIRST_BOOT_H_THD = %d, FIRST_BOOT_L_THD = %d\n", __func__, FIRST_BOOT_H_THD, FIRST_BOOT_L_THD);
 	printk(KERN_ERR "%s: [CCI]stk3x1x_enable_ps() show factory H/L THD => cci_ps_high_thd = %d, cci_ps_low_thd = %d, cci_result_ct = %d\n", __func__, cci_ps_high_thd, cci_ps_low_thd, cci_result_ct);
@@ -1012,7 +1192,7 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 static int32_t stk3x1x_enable_als(struct stk3x1x_data *ps_data, uint8_t enable)
 {
     int32_t ret;
-	uint8_t w_state_reg;
+	//uint8_t w_state_reg;
 	uint8_t curr_als_enable = (ps_data->als_enabled)?1:0;
 	
 	if(curr_als_enable == enable)
@@ -1034,12 +1214,15 @@ static int32_t stk3x1x_enable_als(struct stk3x1x_data *ps_data, uint8_t enable)
         stk3x1x_set_als_thd_l(ps_data, 0xFFFF);		
 	}
 #endif	
+/*Nina modify for reset issue*/
+   /*
     ret = stk3x1x_i2c_smbus_read_byte_data(ps_data->client, STK_STATE_REG);
     if (ret < 0)
     {
         printk(KERN_ERR "%s: write i2c error\n", __func__);
 		return ret;
     }	
+    */
 	/*
 	w_state_reg = (uint8_t)(ret & (~(STK_STATE_EN_ALS_MASK | STK_STATE_EN_WAIT_MASK))); 
 	if(enable)	
@@ -1048,20 +1231,19 @@ static int32_t stk3x1x_enable_als(struct stk3x1x_data *ps_data, uint8_t enable)
 		w_state_reg |= STK_STATE_EN_WAIT_MASK;	
 	*/
 	/*Nina modify 2015/3/23 start*/
-	w_state_reg = (uint8_t)(ret & (~(STK_STATE_EN_ALS_MASK | STK_STATE_EN_WAIT_MASK))); 
+	Keep_state &= (uint8_t)(~(STK_STATE_EN_ALS_MASK | STK_STATE_EN_WAIT_MASK)); 
 	if(enable)	
 	{
-		w_state_reg |= STK_STATE_EN_ALS_MASK;	
+		Keep_state |= STK_STATE_EN_ALS_MASK;	
 		if(!(ps_data->ps_enabled))
-			w_state_reg |= STK_STATE_EN_WAIT_MASK;
+			Keep_state |= STK_STATE_EN_WAIT_MASK;
 	}	
 	else{
 		if(ps_data->ps_enabled)
-			w_state_reg |= STK_STATE_EN_WAIT_MASK;
+			Keep_state |= STK_STATE_EN_WAIT_MASK;
 	}
 	/*Nina modify 2015/3/23 end*/
-	
-    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, w_state_reg);
+    ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, Keep_state);
     if (ret < 0)
 	{
 		printk(KERN_ERR "%s: write i2c error\n", __func__);
@@ -1069,7 +1251,7 @@ static int32_t stk3x1x_enable_als(struct stk3x1x_data *ps_data, uint8_t enable)
 	}
 	
     if (enable)
-    {						
+    {
 		ps_data->als_enabled = true;
 #ifdef STK_POLL_ALS			
 		hrtimer_start(&ps_data->als_timer, ps_data->als_poll_delay, HRTIMER_MODE_REL);		
@@ -2137,11 +2319,12 @@ static ssize_t ps_CCI_cali_GC_30mm_Low_show(struct device *dev, struct device_at
 
 	//add for FTM interrupt check 20130424 start
 	//set default THD as ps_thd_h = 0, ps_thd_l = 0 to ensure int trigger
-	ps_data->ps_thd_h = 0;
-	ps_data->ps_thd_l = 0;				
-	printk(KERN_INFO "%s: [Colby] ps_CCI_cali_GC_30mm_Low_show() ps_data->ps_thd_h = %d, ps_data->ps_thd_l = %d\n", __FUNCTION__, ps_data->ps_thd_h, ps_data->ps_thd_l);
-	stk3x1x_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
+	ps_data->ps_thd_h = 300;
+	ps_data->ps_thd_l = 100;				
+	printk(KERN_INFO "%s: [Colby] ps_CCI_cali_GC_30mm_Low_show() ps_data->ps_thd_h = %d, ps_data->ps_thd_l = %d\n", __FUNCTION__,ps_data->ps_thd_h,ps_data->ps_thd_l);
+	
 	stk3x1x_set_ps_thd_l(ps_data, ps_data->ps_thd_l);
+	stk3x1x_set_ps_thd_h(ps_data, ps_data->ps_thd_h);
 	//add for FTM interrupt check 20130424  end
 
 	//uint32_t cci_ps_high_thd;
@@ -2498,8 +2681,8 @@ static int stk_ps_tune_zero_final(struct stk3x1x_data *ps_data)
 		printk(KERN_ERR "%s: write i2c error\n", __func__);
 		return ret;
 	}	
-	
-	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, 0);
+	Keep_state=0;
+	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, Keep_state);
 	if (ret < 0)
 	{
 		printk(KERN_ERR "%s: write i2c error\n", __func__);
@@ -2579,7 +2762,7 @@ static int32_t stk_tune_zero_get_ps_data(struct stk3x1x_data *ps_data)
 static int stk_ps_tune_zero_init(struct stk3x1x_data *ps_data)
 {
 	int32_t ret = 0;
-	uint8_t w_state_reg;	
+	//uint8_t w_state_reg;	
 	
 	ps_data->psi_set = 0;	
 	ps_data->tune_zero_init_proc = true;		
@@ -2595,8 +2778,8 @@ static int stk_ps_tune_zero_init(struct stk3x1x_data *ps_data)
 		return ret;
 	}			
 	
-	w_state_reg = (STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK);			
-	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, w_state_reg);
+	Keep_state |= (STK_STATE_EN_PS_MASK | STK_STATE_EN_WAIT_MASK);		
+	ret = stk3x1x_i2c_smbus_write_byte_data(ps_data->client, STK_STATE_REG, Keep_state);
 	if (ret < 0)
 	{
 		printk(KERN_ERR "%s: write i2c error\n", __func__);
@@ -3472,6 +3655,7 @@ static int stk3x1x_probe(struct i2c_client *client,
 #elif defined(QUALCOMM_DEVICETREE_PLATFORM)
         printk(KERN_ERR "%s: set stk3x1x_pfdata_QCT to plat_data\n", __func__);
         plat_data = &stk3x1x_pfdata_QCT;
+	 plat_data_global=	plat_data;
 //Colby add for Qualcomm device tree end
 
 #else
