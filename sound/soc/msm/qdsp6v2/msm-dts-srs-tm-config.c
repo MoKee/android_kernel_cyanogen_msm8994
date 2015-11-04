@@ -186,6 +186,19 @@ static int msm_dts_srs_trumedia_control_mi2s_set(struct snd_kcontrol *kcontrol,
 	return ret;
 }
 
+static int msm_dts_srs_trumedia_control_quat_mi2s_set(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	int ret, port_id;
+
+	pr_debug("SRS control QUAT_MI2S called\n");
+	msm_pcm_routing_acquire_lock();
+	port_id = AFE_PORT_ID_QUATERNARY_MI2S_RX;
+	ret = msm_dts_srs_trumedia_control_set_(port_id, kcontrol, ucontrol);
+	msm_pcm_routing_release_lock();
+	return ret;
+}
+
 static int msm_dts_srs_trumedia_control_hdmi_set(struct snd_kcontrol *kcontrol,
 					   struct snd_ctl_elem_value *ucontrol)
 {
@@ -281,6 +294,28 @@ static const struct snd_kcontrol_new lpa_srs_trumedia_controls_mi2s[] = {
 	}
 };
 
+static const struct snd_kcontrol_new lpa_srs_trumedia_controls_quat_mi2s[] = {
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "SRS TruMedia QUAT_MI2S",
+		.access = SNDRV_CTL_ELEM_ACCESS_TLV_READ |
+			SNDRV_CTL_ELEM_ACCESS_READWRITE,
+		.info = snd_soc_info_volsw,
+		.get = msm_dts_srs_trumedia_control_get,
+		.put = msm_dts_srs_trumedia_control_quat_mi2s_set,
+		.private_value = ((unsigned long)&(struct soc_mixer_control)
+		{
+			.reg = SND_SOC_NOPM,
+			.rreg = SND_SOC_NOPM,
+			.shift = 0,
+			.rshift = 0,
+			.max = 0xFFFFFFFF,
+			.platform_max = 0xFFFFFFFF,
+			.invert = 0
+		})
+	}
+};
+
 void msm_dts_srs_tm_add_controls(struct snd_soc_platform *platform)
 {
 	snd_soc_add_platform_controls(platform,
@@ -297,6 +332,9 @@ void msm_dts_srs_tm_add_controls(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,
 				lpa_srs_trumedia_controls_mi2s,
 			ARRAY_SIZE(lpa_srs_trumedia_controls_mi2s));
+	snd_soc_add_platform_controls(platform,
+				lpa_srs_trumedia_controls_quat_mi2s,
+			ARRAY_SIZE(lpa_srs_trumedia_controls_quat_mi2s));
 }
 
 static int reg_ion_mem(void)
