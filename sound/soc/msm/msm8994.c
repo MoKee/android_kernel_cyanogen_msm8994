@@ -2145,13 +2145,6 @@ static void msm8994_quat_mi2s_snd_shutdown(struct snd_pcm_substream *substream)
 	}
 }
 
-#ifdef CONFIG_MACH_PM9X
-int msm8994_quat_mi2s_snd_is_startup(void)
-{
-	return ((atomic_read(&quat_mi2s_rsc_ref) >= 1) ? 1: 0);
-}
-EXPORT_SYMBOL_GPL(msm8994_quat_mi2s_snd_is_startup);
-#endif
 
 static int msm_be_tert_mi2s_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 					    struct snd_pcm_hw_params *params)
