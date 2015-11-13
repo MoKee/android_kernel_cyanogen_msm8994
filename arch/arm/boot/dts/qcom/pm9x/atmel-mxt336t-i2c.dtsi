@@ -33,8 +33,8 @@
 			atmel,irq-gpio = <&msm_gpio 76 0x8>;
 			/* Numbers of each keymap keys (keymap_0 ~ keymap_10) */
 			atmel,gpio-keymap-num = <0 0 0 0 0 0 0 1 0 4 6>;
-			/* T93_KEY */
-			atmel,gpio-keymap_7 = <255>;
+			/* T93_KEY map to KEY_POWER */
+			atmel,gpio-keymap_7 = <116>;
 			/* T115_KEY */
 			atmel,gpio-keymap_9 = <253 254 199 198>;
 			/* T116_KEY */
