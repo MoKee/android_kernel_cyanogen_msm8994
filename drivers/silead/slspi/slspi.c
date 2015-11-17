@@ -1340,7 +1340,7 @@ spidev_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 static int spidev_open(struct inode *inode, struct file *filp)
 {
-    struct spidev_data	*spidev;
+    struct spidev_data	*spidev = NULL;
     int			status = -ENXIO;
 
     if (atomic_read(&fp_spidev->is_cal_mode)){

@@ -245,6 +245,12 @@ static struct qseecom_key_id_usage_desc key_id_array[] = {
 	{
 		.desc = "Per File Encryption",
 	},
+	{
+		.desc = "UFS ICE Disk Encryption",
+	},
+	{
+		.desc = "SDCC ICE Disk Encryption",
+	},
 };
 
 /* Function proto types */
