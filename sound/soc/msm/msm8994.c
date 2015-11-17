@@ -4163,7 +4163,7 @@ static int msm8994_asoc_machine_probe(struct platform_device *pdev)
 
 	mbhc_cfg.mclk_rate = pdata->mclk_freq;
 	if (of_property_read_bool(pdev->dev.of_node, "qcom,hdmi-audio-rx")) {
-		dev_info(&pdev->dev, "%s: hdmi audio support present\n",
+		dev_dbg(&pdev->dev, "%s: hdmi audio support present\n",
 				__func__);
 		memcpy(msm8994_dai_links, msm8994_common_dai_links,
 			sizeof(msm8994_common_dai_links));
@@ -4173,7 +4173,7 @@ static int msm8994_asoc_machine_probe(struct platform_device *pdev)
 		card->dai_link	= msm8994_dai_links;
 		card->num_links	= ARRAY_SIZE(msm8994_dai_links);
 	} else {
-		dev_info(&pdev->dev, "%s: No hdmi audio support\n", __func__);
+		dev_dbg(&pdev->dev, "%s: No hdmi audio support\n", __func__);
 
 		card->dai_link	= msm8994_common_dai_links;
 		card->num_links	= ARRAY_SIZE(msm8994_common_dai_links);
