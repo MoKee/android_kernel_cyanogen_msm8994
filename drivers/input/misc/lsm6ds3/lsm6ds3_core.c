@@ -256,7 +256,6 @@ static int gyro_xyz_offset[3] = {0};
 static bool accel_first_enable = true;
 static bool gyro_first_enable = true;
 static int cei_read_offset_in_file(const char *filename, int *r_buf);
-static int cei_store_offset_in_file(const char *filename, int offset[3], int data_valid);
 /* [PM99] E- BUG#19 Grace_Chang G+Gyro & M sensor FTM function */
 
 /* Grace add for register dump */
@@ -2053,59 +2052,6 @@ static int cei_read_offset_in_file(const char *filename, int *r_buf)
 	return 0;
 }
 
-static int cei_store_offset_in_file(const char *filename, int offset[3], int data_valid)
-{
-	struct file *cali_file;
-	mm_segment_t fs;
-	int w_buf[LSM6DS3_DATA_BUF_NUM] = {0} , r_buf[LSM6DS3_DATA_BUF_NUM] = {0};
-	int i;
-
-	cali_file = filp_open(filename, O_CREAT | O_RDWR, 0777);
-	if(IS_ERR(cali_file))
-	{
-		pr_info("[Sensor] %s: filp_open error!\n", __FUNCTION__);
-		return -1;
-	}
-	else
-	{
-		fs = get_fs();
-		set_fs(get_ds());
-
-		w_buf[0] = offset[0];
-		w_buf[1] = offset[1];
-		w_buf[2] = offset[2];
-		if (data_valid == 1)
-		{
-			w_buf[3] = VALID_CALI_FILE;
-		}
-		else if (data_valid == 0)
-		{
-			w_buf[3] = OUT_RANGE_CALI_FILE;
-		}
-		else
-		{
-			w_buf[3] = 0;
-		}
-		cali_file->f_op->write(cali_file, (void *)w_buf, sizeof(w_buf), &cali_file->f_pos);
-		cali_file->f_pos=0x00;
-		cali_file->f_op->read(cali_file, (void *)r_buf, sizeof(r_buf),&cali_file->f_pos);
-		for (i=0; i<LSM6DS3_DATA_BUF_NUM; i++)
-		{
-			pr_info("[Sensor] %s: w_buf[%d]=%d\n", __FUNCTION__, i, w_buf[i]);
-			//pr_info("[Sensor] %s: r_buf[%d]=%d , w_buf[%d]=%d\n", __FUNCTION__, i, r_buf[i], i, w_buf[i]);
-			if(r_buf[i] != w_buf[i])
-			{
-				pr_info("[Sensor] %s: read back error\n", __FUNCTION__);
-				filp_close(cali_file,NULL);
-				return -1;
-			}
-		}
-		set_fs(fs);
-	}
-	filp_close(cali_file,NULL);
-	return 0;
-}
-
 static ssize_t get_accel_cali(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -2146,119 +2092,6 @@ static ssize_t get_accel_cali(struct device *dev,
 	}
 }
 
-static ssize_t set_accel_cali(struct device *dev, struct device_attribute *attr,
-						const char *buf, size_t count)
-{
-	struct lsm6ds3_sensor_data *sdata = dev_get_drvdata(dev);
-	unsigned long start;
-	int err, i;
-	u8 data[LSM6DS3_CALI_DATA_NUM][6] = {{0}};
-	int xyz[LSM6DS3_CALI_DATA_NUM][3] = {{0}};
-	int sum[3]= {0} , avg[3]= {0}, offset[3]= {0};
-	u8 current_enabled;
-
-	err = strict_strtoul(buf, 10, &start);
-	if (err)
-	{
-		pr_info("[Sensor] %s: strict_strtoul failed, error=0x%x\n", __FUNCTION__, err );
-		return err;
-	}
-
-	if(start==1)
-	{
-		current_enabled = sdata->enabled;
-		pr_info("[Sensor] %s: Start to calibrate accel sensor , current_enabled=%d\n", __FUNCTION__, current_enabled);
-		lsm6ds3_enable_sensors(sdata);
-		msleep(40);	// 26HZ = 38ms update one data
-		accel_xyz_offset[0] = accel_xyz_offset[1] = accel_xyz_offset[2] = 0;
-
-		for (i=0; i<LSM6DS3_CALI_DATA_NUM; i++)
-		{
-			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_ACCEL_OUT_X_L_ADDR, 
-									LSM6DS3_OUT_XYZ_SIZE, data[i], true);
-			if (err < 0)
-			{
-				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
-			}
-
-			xyz[i][0] = (s32)((s16)(data[i][0] | (data[i][1] << 8)));
-			xyz[i][1] = (s32)((s16)(data[i][2] | (data[i][3] << 8)));
-			xyz[i][2] = (s32)((s16)(data[i][4] | (data[i][5] << 8)));
-			pr_info("[Sensor] %2d -  %d , %d , %d\n", i, xyz[i][0], xyz[i][1], xyz[i][2]);
-
-			sum[0] += xyz[i][0];
-			sum[1] += xyz[i][1];
-			sum[2] += xyz[i][2];
-			msleep(40);	// 26HZ = 38ms update one data
-		}
-		if (!current_enabled)
-		{
-			lsm6ds3_disable_sensors(sdata);
-		}
-		avg[0] = sum[0] / LSM6DS3_CALI_DATA_NUM;
-		avg[1] = sum[1] / LSM6DS3_CALI_DATA_NUM;
-		avg[2] = sum[2] / LSM6DS3_CALI_DATA_NUM;
-		pr_info("[Sensor] %s: avg_x=%d , avg_y=%d , avg_z=%d\n", __FUNCTION__, avg[0], avg[1], avg[2] );
-
-		pr_info("[Sensor] %s: POS_1G=%d , NEG_1G=%d\n", __FUNCTION__, POS_1G, NEG_1G );
-		pr_info("[Sensor] %s: ACCEL_XY_MAX_AVG_VAL=%d , ACCEL_XY_MIN_AVG_VAL=%d\n", __FUNCTION__, ACCEL_XY_MAX_AVG_VAL, ACCEL_XY_MIN_AVG_VAL );
-		pr_info("[Sensor] %s: ACCEL_Z_POS_MAX_AVG_VAL=%d , ACCEL_Z_POS_MIN_AVG_VAL=%d\n", __FUNCTION__, ACCEL_Z_POS_MAX_AVG_VAL, ACCEL_Z_POS_MIN_AVG_VAL );
-		pr_info("[Sensor] %s: ACCEL_Z_NEG_MAX_AVG_VAL=%d , ACCEL_Z_NEG_MIN_AVG_VAL=%d\n", __FUNCTION__, ACCEL_Z_NEG_MAX_AVG_VAL, ACCEL_Z_NEG_MIN_AVG_VAL );
-		if (avg[0]>ACCEL_XY_MAX_AVG_VAL || avg[0]<ACCEL_XY_MIN_AVG_VAL)
-		{
-			pr_info("[Sensor] %s: X axis out of range\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			cei_store_offset_in_file(LSM6DS3_ACC_CALI_FILE, offset, 0);
-			return count;
-		}
-		else if (avg[1]>ACCEL_XY_MAX_AVG_VAL || avg[1]<ACCEL_XY_MIN_AVG_VAL)
-		{
-			pr_info("[Sensor] %s: Y axis out of range\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			cei_store_offset_in_file(LSM6DS3_ACC_CALI_FILE, offset, 0);
-			return count;
-		}
-
-		if (avg[2]<=ACCEL_Z_POS_MAX_AVG_VAL && avg[2]>=ACCEL_Z_POS_MIN_AVG_VAL)
-		{
-			pr_info("[Sensor] %s: Z+ face up\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = (int)POS_1G - avg[2];
-		}
-		else if (avg[2]<=ACCEL_Z_NEG_MAX_AVG_VAL && avg[2]>=ACCEL_Z_NEG_MIN_AVG_VAL)
-		{
-			pr_info("[Sensor] %s: Z+ face down\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = (int)NEG_1G - avg[2];
-		}
-		else
-		{
-			pr_info("[Sensor] %s: Z axis must in +/- 1G\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = 0xFFFF;
-			cei_store_offset_in_file(LSM6DS3_ACC_CALI_FILE, offset, 0);
-			return count;
-		}
-
-		pr_info("[Sensor] %s: offset_x=%d , offset_y=%d , offset_z=%d\n", __FUNCTION__, offset[0], offset[1], offset[2] );
-		cei_store_offset_in_file(LSM6DS3_ACC_CALI_FILE, offset, 1);
-		accel_xyz_offset[0] = offset[0];
-		accel_xyz_offset[1] = offset[1];
-		accel_xyz_offset[2] = offset[2];
-	}
-	else
-	{
-		pr_info("[Sensor] %s: wrong enter, not to calibrate accel sensor\n", __FUNCTION__);
-	}
-
-	return count;
-}
-
 static ssize_t get_gyro_cali(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -2297,108 +2130,6 @@ static ssize_t get_gyro_cali(struct device *dev,
 	{
 		return sprintf(buf, "read %s error\nFail\n", LSM6DS3_GYRO_CALI_FILE );
 	}
-}
-
-static ssize_t set_gyro_cali(struct device *dev, struct device_attribute *attr,
-						const char *buf, size_t count)
-{
-	struct lsm6ds3_sensor_data *sdata = dev_get_drvdata(dev);
-	unsigned long start;
-	int err, i;
-	u8 data[LSM6DS3_CALI_DATA_NUM+LSM6DS3_CALI_DATA_BYPASS_NUM][6] = {{0}};
-	int xyz[LSM6DS3_CALI_DATA_NUM+LSM6DS3_CALI_DATA_BYPASS_NUM][3] = {{0}};
-	int sum[3]= {0} , avg[3]= {0}, offset[3]= {0};
-	u8 current_enabled;
-
-	err = strict_strtoul(buf, 10, &start);
-	if (err)
-	{
-		pr_info("[Sensor] %s: strict_strtoul failed, error=0x%x\n", __FUNCTION__, err );
-		return err;
-	}
-
-	if(start==1)
-	{
-		current_enabled = sdata->enabled;
-		pr_info("[Sensor] %s: Start to calibrate gyro sensor , current_enabled=%d\n", __FUNCTION__, current_enabled);
-		lsm6ds3_enable_sensors(sdata);
-		msleep(40);	// 26HZ = 38ms update one data
-		gyro_xyz_offset[0] = gyro_xyz_offset[1] = gyro_xyz_offset[2] = 0;
-
-		for (i=0; i<(LSM6DS3_CALI_DATA_NUM+LSM6DS3_CALI_DATA_BYPASS_NUM); i++)
-		{
-			err = sdata->cdata->tf->read(sdata->cdata, LSM6DS3_GYRO_OUT_X_L_ADDR, 
-									LSM6DS3_OUT_XYZ_SIZE, data[i], true);
-			if (err < 0)
-			{
-				pr_info("[Sensor] %s: get %s data failed %d\n", __FUNCTION__, sdata->name, err );
-			}
-
-			xyz[i][0] = (s32)((s16)(data[i][0] | (data[i][1] << 8)));
-			xyz[i][1] = (s32)((s16)(data[i][2] | (data[i][3] << 8)));
-			xyz[i][2] = (s32)((s16)(data[i][4] | (data[i][5] << 8)));
-			pr_info("[Sensor] %2d -  %d , %d , %d\n", i, xyz[i][0], xyz[i][1], xyz[i][2]);
-
-			if (i>=LSM6DS3_CALI_DATA_BYPASS_NUM)
-			{
-				sum[0] += xyz[i][0];
-				sum[1] += xyz[i][1];
-				sum[2] += xyz[i][2];
-			}
-			msleep(40);	// 26HZ = 38ms update one data
-		}
-		if (!current_enabled)
-		{
-			lsm6ds3_disable_sensors(sdata);
-		}
-		avg[0] = sum[0] / LSM6DS3_CALI_DATA_NUM;
-		avg[1] = sum[1] / LSM6DS3_CALI_DATA_NUM;
-		avg[2] = sum[2] / LSM6DS3_CALI_DATA_NUM;
-		pr_info("[Sensor] %s: avg_x=%d , avg_y=%d , avg_z=%d\n", __FUNCTION__, avg[0], avg[1], avg[2] );
-
-		pr_info("[Sensor] %s: GYRO_MAX_OFFSET_VAL=%d , GYRO_MIN_OFFSET_VAL=%d\n", __FUNCTION__, GYRO_MAX_OFFSET_VAL, GYRO_MIN_OFFSET_VAL );
-		if (avg[0]>GYRO_MAX_OFFSET_VAL || avg[0]<GYRO_MIN_OFFSET_VAL)
-		{
-			pr_info("[Sensor] %s: X axis out of range\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = 0 - avg[2];
-			cei_store_offset_in_file(LSM6DS3_GYRO_CALI_FILE, offset, 0);
-			return count;
-		}
-		else if (avg[1]>GYRO_MAX_OFFSET_VAL || avg[1]<GYRO_MIN_OFFSET_VAL)
-		{
-			pr_info("[Sensor] %s: Y axis out of range\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = 0 - avg[2];
-			cei_store_offset_in_file(LSM6DS3_GYRO_CALI_FILE, offset, 0);
-			return count;
-		}
-		else if (avg[2]>GYRO_MAX_OFFSET_VAL || avg[2]<GYRO_MIN_OFFSET_VAL)
-		{
-			pr_info("[Sensor] %s: Z axis out of range\n", __FUNCTION__);
-			offset[0] = 0 - avg[0];
-			offset[1] = 0 - avg[1];
-			offset[2] = 0 - avg[2];
-			cei_store_offset_in_file(LSM6DS3_GYRO_CALI_FILE, offset, 0);
-			return count;
-		}
-		offset[0] = 0 - avg[0];
-		offset[1] = 0 - avg[1];
-		offset[2] = 0 - avg[2];
-		pr_info("[Sensor] %s: offset_x=%d , offset_y=%d , offset_z=%d\n", __FUNCTION__, offset[0], offset[1], offset[2] );
-		cei_store_offset_in_file(LSM6DS3_GYRO_CALI_FILE, offset, 1);
-		gyro_xyz_offset[0] = offset[0];
-		gyro_xyz_offset[1] = offset[1];
-		gyro_xyz_offset[2] = offset[2];
-	}
-	else
-	{
-		pr_info("[Sensor] %s: wrong enter, not to calibrate gyro sensor\n", __FUNCTION__);
-	}
-
-	return count;
 }
 #endif
 
@@ -3014,8 +2745,8 @@ static DEVICE_ATTR(ping, S_IWUSR | S_IRUGO, get_ping, NULL);
 /* Grace add for register dump */
 static DEVICE_ATTR(reg_dump, S_IWUSR | S_IRUGO, get_reg_dump, NULL);
 #ifdef CEI_FTM_CALI
-static DEVICE_ATTR(accel_cali, S_IWUSR | S_IRUGO, get_accel_cali, set_accel_cali);
-static DEVICE_ATTR(gyro_cali, S_IWUSR | S_IRUGO, get_gyro_cali, set_gyro_cali);
+static DEVICE_ATTR(accel_cali, S_IRUGO, get_accel_cali, NULL);
+static DEVICE_ATTR(gyro_cali, S_IRUGO, get_gyro_cali, NULL);
 #endif
 #ifdef CEI_FTM_SELF_TEST
 static DEVICE_ATTR(accel_self_test, S_IWUSR | S_IRUGO, get_accel_self_test, set_accel_self_test);
