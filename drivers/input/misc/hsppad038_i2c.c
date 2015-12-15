@@ -101,13 +101,13 @@ struct hsppad_data {
 	struct input_dev	*input;
 	struct i2c_client	*i2c;
 	struct delayed_work	work_data;
-	struct mutex		lock;
+	struct mutex		data_lock;
+	struct mutex		startstop_lock;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend	early_suspend_h;
 #endif
 	unsigned int		delay_msec;
 	bool			factive;
-	bool			fsuspend;
 //jonny S
 	/* power control */
 	//struct regulator *vlogic;
@@ -392,8 +392,6 @@ static int hsppad_get_pressure_data(
 	int err = -1;
 	u8 sx[HSPPAD_DATA_ACCESS_NUM];
 
-	if (hsppad->fsuspend != 0)
-		return err;
 	err = hsppad_i2c_read(hsppad->i2c, sx,
 		HSPPAD_DATA_ACCESS_NUM);
 	if (err < 0)
@@ -439,20 +437,19 @@ static void hsppad_measure_start(struct hsppad_data *hsppad)
 		HSPPAD_LOG_TAG "%s\n", __func__);
 
 	hsppad_force_setup(hsppad);
+	hsppad->factive = true;
 	schedule_delayed_work(&hsppad->work_data,
 		msecs_to_jiffies(hsppad->delay_msec));
-	if (!hsppad->fsuspend)
-		hsppad->factive = true;
 }
 
-static void hsppad_measure_stop(struct hsppad_data *hsppad)
+static void hsppad_measure_stop(struct hsppad_data *hsppad, bool suspend)
 {
 	dev_dbg(&hsppad->i2c->adapter->dev,
 		HSPPAD_LOG_TAG "%s\n", __func__);
 
-	if (!hsppad->fsuspend)
+	cancel_delayed_work_sync(&hsppad->work_data);
+	if (!suspend)
 		hsppad->factive = false;
-	cancel_delayed_work(&hsppad->work_data);
 }
 
 static void hsppad_get_hardware_data(
@@ -495,12 +492,12 @@ static ssize_t hsppad_enable_store(struct device *dev,
 	dev_dbg(&hsppad->i2c->adapter->dev,
 		HSPPAD_LOG_TAG "%s, enable = %d\n", __func__, new_value);
 
-	mutex_lock(&hsppad->lock);
+	mutex_lock(&hsppad->startstop_lock);
 	if (new_value)
 		hsppad_measure_start(hsppad);
 	else
-		hsppad_measure_stop(hsppad);
-	mutex_unlock(&hsppad->lock);
+		hsppad_measure_stop(hsppad, false);
+	mutex_unlock(&hsppad->startstop_lock);
 
 	return size;
 }
@@ -524,13 +521,13 @@ static ssize_t hsppad_delay_store(struct device *dev,
 	if (err < 0)
 		return err;
 
-	mutex_lock(&hsppad->lock);
+	mutex_lock(&hsppad->data_lock);
 	if (new_delay < 10)
 		new_delay = 10;
 	else if (new_delay > 200)
 		new_delay = 200;
 	hsppad->delay_msec = (int)new_delay;
-	mutex_unlock(&hsppad->lock);
+	mutex_unlock(&hsppad->data_lock);
 
 	dev_dbg(&hsppad->i2c->adapter->dev,
 		HSPPAD_LOG_TAG "%s, rate = %d (msec)\n",
@@ -546,9 +543,9 @@ static ssize_t hsppad_get_hw_data_show(struct device *dev,
 	struct hsppad_data *hsppad = dev_get_drvdata(dev);
 
 	if (!hsppad->factive) {
-		mutex_lock(&hsppad->lock);
+		mutex_lock(&hsppad->data_lock);
 		hsppad_get_hardware_data(hsppad, pt);
-		mutex_unlock(&hsppad->lock);
+		mutex_unlock(&hsppad->data_lock);
 	} else
 		dev_err(&hsppad->i2c->adapter->dev,
 			HSPPAD_LOG_TAG "Please turn off sensor\n");
@@ -571,9 +568,9 @@ static ssize_t hsppad_get_hw_data_show_hPa(struct device *dev,
 	struct hsppad_data *hsppad = dev_get_drvdata(dev);
 
 	if (!hsppad->factive) {
-		mutex_lock(&hsppad->lock);
+		mutex_lock(&hsppad->data_lock);
 		hsppad_get_hardware_data(hsppad, pt);
-		mutex_unlock(&hsppad->lock);
+		mutex_unlock(&hsppad->data_lock);
 	} else
 		dev_err(&hsppad->i2c->adapter->dev,
 			HSPPAD_LOG_TAG "Please turn off sensor\n");
@@ -606,7 +603,7 @@ static ssize_t hsppad_get_WIA_data_show(struct device *dev,
 	u8 buffer;
 	struct hsppad_data *hsppad = dev_get_drvdata(dev);
 
-	mutex_lock(&hsppad->lock);
+	mutex_lock(&hsppad->data_lock);
 	
 	buffer = 0x01;
 	err = hsppad_i2c_write(hsppad->i2c, &buffer, 1);
@@ -620,7 +617,7 @@ static ssize_t hsppad_get_WIA_data_show(struct device *dev,
 	if(err !=0)
 			dev_err(&hsppad->i2c->adapter->dev,
 			HSPPAD_LOG_TAG "read_error\n");
-	mutex_unlock(&hsppad->lock);
+	mutex_unlock(&hsppad->data_lock);
 	
 	dev_dbg(&hsppad->i2c->adapter->dev,
 	HSPPAD_LOG_TAG "status:%d, sx[1]:%d, sx[2]:%d\n", sx[0], sx[1], sx[2]);
@@ -684,22 +681,25 @@ static void hsppad_remove_sysfs(struct device *dev)
 static int hsppad_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	struct hsppad_data *hsppad = i2c_get_clientdata(client);
-	mutex_lock(&hsppad->lock);
-	hsppad->fsuspend = true;
-	hsppad_measure_stop(hsppad);
-	mutex_unlock(&hsppad->lock);
+
+	mutex_lock(&hsppad->startstop_lock);
+	hsppad_measure_stop(hsppad, true);
+	mutex_unlock(&hsppad->startstop_lock);
+
 	return 0;
 }
 
 static int hsppad_resume(struct i2c_client *client)
 {
 	struct hsppad_data *hsppad = i2c_get_clientdata(client);
-	mutex_lock(&hsppad->lock);
-	if (hsppad->factive)
+
+	mutex_lock(&hsppad->startstop_lock);
+	if (hsppad->factive) {
+		hsppad->flag_previous = false;		/* [PM99] BUG#564 Jonny_Chan avoid I2C fail ALPS modified 20150626 */
 		hsppad_measure_start(hsppad);
-	hsppad->fsuspend = false;
-	hsppad->flag_previous = false;		/* [PM99] BUG#564 Jonny_Chan avoid I2C fail ALPS modified 20150626 */
-	mutex_unlock(&hsppad->lock);
+	}
+	mutex_unlock(&hsppad->startstop_lock);
+
 	return 0;
 }
 
@@ -729,7 +729,7 @@ static void hsppad_polling(struct work_struct *work)
 	struct hsppad_data *hsppad = container_of(work,
 		struct hsppad_data, work_data.work);
 
-	mutex_lock(&hsppad->lock);
+	mutex_lock(&hsppad->data_lock);
 	if (hsppad->factive) {
 		struct timespec ts;
 		int64_t timestamp;
@@ -749,7 +749,7 @@ static void hsppad_polling(struct work_struct *work)
 		schedule_delayed_work(&hsppad->work_data,
 			msecs_to_jiffies(hsppad->delay_msec));
 	}
-	mutex_unlock(&hsppad->lock);
+	mutex_unlock(&hsppad->data_lock);
 }
 
 
@@ -788,7 +788,8 @@ static int hsppad_probe(struct i2c_client *client,
 	hsppad->i2c = client;
 	i2c_set_clientdata(client, hsppad);
 
-	mutex_init(&hsppad->lock);
+	mutex_init(&hsppad->data_lock);
+	mutex_init(&hsppad->startstop_lock);
 
 	hsppad->delay_msec = HSPPAD_INITIALL_DELAY;
 
@@ -873,7 +874,6 @@ static int hsppad_probe(struct i2c_client *client,
 #endif
 
 	hsppad->factive = false;
-	hsppad->fsuspend = false;
 	hsppad->flag_previous = false;		/* [PM99]BUG#564 Jonny_Chan avoid I2C fail ALPS modified 20150626 */
 	dev_info(&client->adapter->dev,
 		HSPPAD_LOG_TAG "detected %s pressure sensor\n",
@@ -900,7 +900,7 @@ static int hsppad_remove(struct i2c_client *client)
 	struct hsppad_data *hsppad = i2c_get_clientdata(client);
 
 	dev_dbg(&client->adapter->dev, "%s\n", __func__);
-	hsppad_measure_stop(hsppad);
+	hsppad_measure_stop(hsppad, false);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&hsppad->early_suspend_h);
 #endif
