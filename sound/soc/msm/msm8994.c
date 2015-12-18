@@ -2107,14 +2107,6 @@ static int msm8994_quat_mi2s_snd_startup(struct snd_pcm_substream *substream)
 		if (ret < 0) pr_err("%s: set fmt cpu dai failed, err:%d\n", __func__, ret);
 #endif
 		pr_info("%s Quaternary MI2S Clock is Enabled\n", __func__);
-#ifdef CONFIG_MACH_PM9X
-		/*
-		 * Enabling the MI2S clock triggers power-on of the external amplifier,
-		 * which has a 2ms warm-up time. Delay to avoid talking to the amp before
-		 * it's settled.
-		 */
-		msleep(2);
-#endif
 		snd_ctl_notify(snd_soc_card_msm8994.snd_card, SNDRV_CTL_EVENT_MASK_VALUE,
 			&snd_soc_card_get_kcontrol(&snd_soc_card_msm8994, "QUAT_MI2S Clock")->id);
 	}
