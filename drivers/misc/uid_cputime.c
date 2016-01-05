@@ -97,6 +97,12 @@ static int uid_stat_show(struct seq_file *m, void *v)
 				task_uid(task)));
 			return -ENOMEM;
 		}
+		/*
+		 * If this task is exiting, we have already accounted for the
+		 * time and power.
+		 */
+		if (task->flags & PF_EXITING)
+			continue;
 		task_cputime_adjusted(task, &utime, &stime);
 		uid_entry->active_utime += utime;
 		uid_entry->active_stime += stime;
