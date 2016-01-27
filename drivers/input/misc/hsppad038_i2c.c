@@ -100,7 +100,9 @@
 struct hsppad_data {
 	struct input_dev	*input;
 	struct i2c_client	*i2c;
-	struct delayed_work	work_data;
+	struct work_struct	work_data;
+	struct workqueue_struct	*work_queue;
+	struct hrtimer		poll_timer;
 	struct mutex		data_lock;
 	struct mutex		startstop_lock;
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -438,8 +440,10 @@ static void hsppad_measure_start(struct hsppad_data *hsppad)
 
 	hsppad_force_setup(hsppad);
 	hsppad->factive = true;
-	schedule_delayed_work(&hsppad->work_data,
-		msecs_to_jiffies(hsppad->delay_msec));
+
+	hrtimer_start(&hsppad->poll_timer,
+			ns_to_ktime(hsppad->delay_msec * 1000 * 1000),
+			HRTIMER_MODE_REL);
 }
 
 static void hsppad_measure_stop(struct hsppad_data *hsppad, bool suspend)
@@ -447,7 +451,9 @@ static void hsppad_measure_stop(struct hsppad_data *hsppad, bool suspend)
 	dev_dbg(&hsppad->i2c->adapter->dev,
 		HSPPAD_LOG_TAG "%s\n", __func__);
 
-	cancel_delayed_work_sync(&hsppad->work_data);
+	hrtimer_cancel(&hsppad->poll_timer);
+	cancel_work_sync(&hsppad->work_data);
+
 	if (!suspend)
 		hsppad->factive = false;
 }
@@ -524,8 +530,6 @@ static ssize_t hsppad_delay_store(struct device *dev,
 	mutex_lock(&hsppad->data_lock);
 	if (new_delay < 10)
 		new_delay = 10;
-	else if (new_delay > 200)
-		new_delay = 200;
 	hsppad->delay_msec = (int)new_delay;
 	mutex_unlock(&hsppad->data_lock);
 
@@ -719,6 +723,17 @@ static void hsppad_early_resume(struct early_suspend *handler)
 }
 #endif
 
+static enum hrtimer_restart hsppad_timer_func(struct hrtimer *timer)
+{
+	struct hsppad_data *hsppad = container_of(timer,
+		struct hsppad_data, poll_timer);
+
+	queue_work(hsppad->work_queue, &hsppad->work_data);
+	hrtimer_forward_now(&hsppad->poll_timer,
+			ns_to_ktime(hsppad->delay_msec * 1000 * 1000));
+
+	return HRTIMER_RESTART;
+}
 
 /*--------------------------------------------------------------------------
  * work function
@@ -727,7 +742,7 @@ static void hsppad_polling(struct work_struct *work)
 {
 	int pt[2];
 	struct hsppad_data *hsppad = container_of(work,
-		struct hsppad_data, work_data.work);
+		struct hsppad_data, work_data);
 
 	mutex_lock(&hsppad->data_lock);
 	if (hsppad->factive) {
@@ -746,8 +761,6 @@ static void hsppad_polling(struct work_struct *work)
 			input_sync(hsppad->input);
 		}
 		hsppad_force_setup(hsppad);
-		schedule_delayed_work(&hsppad->work_data,
-			msecs_to_jiffies(hsppad->delay_msec));
 	}
 	mutex_unlock(&hsppad->data_lock);
 }
@@ -842,7 +855,12 @@ static int hsppad_probe(struct i2c_client *client,
 	printk("%s,  S5\n",__func__);
 	dev_dbg(&client->adapter->dev, "input_register_device\n");
 
-	INIT_DELAYED_WORK(&hsppad->work_data, hsppad_polling);
+	hrtimer_init(&hsppad->poll_timer, CLOCK_MONOTONIC,
+			HRTIMER_MODE_REL);
+	hsppad->poll_timer.function = hsppad_timer_func;
+	hsppad->work_queue = alloc_workqueue("hsppad_poll_work",
+				WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
+	INIT_WORK(&hsppad->work_data, hsppad_polling);
 
 	rc = hsppad_create_sysfs(&hsppad->input->dev);
 	if (rc) {
@@ -903,6 +921,8 @@ static int hsppad_remove(struct i2c_client *client)
 
 	dev_dbg(&client->adapter->dev, "%s\n", __func__);
 	hsppad_measure_stop(hsppad, false);
+
+	destroy_workqueue(hsppad->work_queue);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&hsppad->early_suspend_h);
 #endif
