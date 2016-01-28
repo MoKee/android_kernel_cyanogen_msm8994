@@ -140,6 +140,7 @@ struct lsm6ds3_sensor_data {
 	struct hrtimer hr_timer;
 	struct work_struct input_work;
 	ktime_t ktime;
+	atomic_t poll_pending;
 #endif
 };
 
@@ -184,7 +185,7 @@ struct lsm6ds3_data {
 
 
 int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype);
-void lsm6ds3_common_remove(struct lsm6ds3_data *cdata, int irq);
+void lsm6ds3_common_remove(struct lsm6ds3_data *cdata);
 int lsm6ds3_common_resume(struct lsm6ds3_data *cdata);
 int lsm6ds3_common_suspend(struct lsm6ds3_data *cdata);
 

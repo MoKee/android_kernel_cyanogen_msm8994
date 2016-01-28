@@ -382,7 +382,7 @@ static struct lsm6ds3_fs_table {
 static struct kobject *g_gyro_sysfs_link[LSM6DS3_SENSORS_NUMB];
 /* [PM99] E- Grace_Chang  Add new file path */
 
-static struct workqueue_struct *lsm6ds3_workqueue = 0;
+static struct workqueue_struct *lsm6ds3_workqueue;
 
 static inline void lsm6ds3_flush_works(void)
 {
@@ -526,9 +526,13 @@ enum hrtimer_restart lsm6ds3_poll_function_read(struct hrtimer *timer)
 	sdata = container_of((struct hrtimer *)timer, struct lsm6ds3_sensor_data,
 							hr_timer);
 
-	queue_work(lsm6ds3_workqueue, &sdata->input_work);
+	if (atomic_cmpxchg(&sdata->poll_pending, 0, 1) == 0)
+		queue_work(lsm6ds3_workqueue, &sdata->input_work);
 
-	return HRTIMER_NORESTART;
+	/* move the timer forward one or more periods forward */
+	hrtimer_forward_now(timer, sdata->ktime);
+
+	return HRTIMER_RESTART;
 }
 
 static int lsm6ds3_get_step_c_data(struct lsm6ds3_sensor_data *sdata, u16 *steps)
@@ -579,7 +583,6 @@ static void poll_function_work(struct work_struct *input_work)
 	int xyz[3] = { 0 };
 	u8 data[6];
 	int err;
-	u64 overrun;
 	s64 timestamp;
 	sdata = container_of((struct work_struct *)input_work,
 			struct lsm6ds3_sensor_data, input_work);
@@ -614,13 +617,7 @@ static void poll_function_work(struct work_struct *input_work)
 		xyz[2] *= sdata->c_gain;
 		lsm6ds3_report_3axes_event(sdata, xyz, timestamp);
 	}
-
-	/* move the timer forward one or more periods forward */
-	overrun = hrtimer_forward_now(&sdata->hr_timer, sdata->ktime);
-	if (overrun != 1)
-		dev_warn_ratelimited(sdata->cdata->dev,
-			"timer overrun = %llu (sample drop)\n", overrun);
-	hrtimer_restart(&sdata->hr_timer);
+	atomic_set(&sdata->poll_pending, 0);
 }
 #endif
 
@@ -1100,14 +1097,15 @@ int lsm6ds3_allocate_workqueue(struct lsm6ds3_data *cdata)
 	int err;
 
 	if (!lsm6ds3_workqueue)
-		lsm6ds3_workqueue = create_workqueue(cdata->name);
+		lsm6ds3_workqueue = alloc_workqueue(cdata->name,
+				WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
 
 	if (!lsm6ds3_workqueue)
 		return -EINVAL;
 
 	INIT_WORK(&cdata->input_work, lsm6ds3_irq_management);
 
-	err = request_threaded_irq(cdata->irq, lsm6ds3_save_timestamp, NULL,
+	err = devm_request_irq(cdata->dev, cdata->irq, lsm6ds3_save_timestamp,
 			IRQF_TRIGGER_HIGH, cdata->name, cdata);
 	if (err)
 		return err;
@@ -1224,6 +1222,7 @@ static int lsm6ds3_enable_sensors(struct lsm6ds3_sensor_data *sdata)
 			return err;
 
 #if defined (CONFIG_LSM6DS3_POLLING_MODE)
+		atomic_set(&sdata->poll_pending, 0);
 		hrtimer_start(&sdata->hr_timer, sdata->ktime, HRTIMER_MODE_REL);
 		sdata->timestamp = lsm6ds3_get_time_ns();
 #endif
@@ -2922,8 +2921,8 @@ int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype)
 	}
 
 	if(lsm6ds3_workqueue == 0)
-		lsm6ds3_workqueue =
-			create_workqueue("lsm6ds3_workqueue");
+		lsm6ds3_workqueue = alloc_workqueue("lsm6ds3_workqueue",
+				WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
 
 	err = lsm6ds3_init_sensors(cdata);
 	if (err < 0)
@@ -2952,7 +2951,7 @@ int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype)
 }
 EXPORT_SYMBOL(lsm6ds3_common_probe);
 
-void lsm6ds3_common_remove(struct lsm6ds3_data *cdata, int irq)
+void lsm6ds3_common_remove(struct lsm6ds3_data *cdata)
 {
 	u8 i;
 

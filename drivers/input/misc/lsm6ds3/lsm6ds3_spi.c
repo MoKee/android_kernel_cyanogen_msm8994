@@ -130,7 +130,7 @@ static int lsm6ds3_spi_remove(struct spi_device *spi)
 	/* TODO: check the function */
 	struct lsm6ds3_data *cdata = spi_get_drvdata(spi);
 
-	lsm6ds3_common_remove(cdata, spi->irq);
+	lsm6ds3_common_remove(cdata);
 	dev_info(cdata->dev, "%s: removed\n", LSM6DS3_ACC_GYR_DEV_NAME);
 	kfree(cdata);
 

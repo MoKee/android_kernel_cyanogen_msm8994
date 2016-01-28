@@ -175,7 +175,7 @@ static int lsm6ds3_i2c_remove(struct i2c_client *client)
 	/* TODO: check the function */
 	struct lsm6ds3_data *cdata = i2c_get_clientdata(client);
 
-	lsm6ds3_common_remove(cdata, client->irq);
+	lsm6ds3_common_remove(cdata);
 	dev_info(cdata->dev, "%s: removed\n", LSM6DS3_ACC_GYR_DEV_NAME);
 	kfree(cdata);
 	return 0;
