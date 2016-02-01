@@ -737,7 +737,7 @@ static void hsppad_polling(struct work_struct *work)
 		timestamp = timespec_to_ns(&ts);
 
 		if (hsppad_get_pressure_data(hsppad, pt) == 0) {
-			input_report_abs(hsppad->input, ABS_PRESSURE, pt[0]); /* ALPS Modified 20150401 change function */
+			input_report_abs(hsppad->input, ABS_BRAKE, pt[0]); /* ALPS Modified 20150401 change function */
 			input_report_abs(hsppad->input, ABS_GAS, pt[1]);      /* ALPS Modified 20150401 change function */
 			input_event(hsppad->input, INPUT_EVENT_TIME_TYPE, INPUT_EVENT_TIME_MSB,
 							timestamp >> 32);
@@ -822,7 +822,9 @@ static int hsppad_probe(struct i2c_client *client,
 	hsppad->input->name		= HSPPAD_INPUT_DEVICE_NAME;
 	hsppad->input->id.bustype	= BUS_I2C;
 	hsppad->input->evbit[0]		= BIT_MASK(EV_ABS);             /* ALPS Modified 20150401 EV_REL->EV_ABS */
-	input_set_abs_params(hsppad->input, ABS_PRESSURE, 250, 1110, 0 ,0); /* ALPS Modified 20150401 change function */
+	/* This is the pressure */
+	input_set_abs_params(hsppad->input, ABS_BRAKE, 250, 1110, 0 ,0); /* ALPS Modified 20150401 change function */
+	/* This is the temperature */
 	input_set_abs_params(hsppad->input, ABS_GAS, -40, 85, 0 ,0);        /* ALPS Modified 20150401 change function */
 
 	/* configure input device for timestamps */
